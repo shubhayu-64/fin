@@ -1,0 +1,32 @@
+ye audio se nikala hu maal for ig report writing
+
+Scope: 
+Objective
+Motivation
+Application
+
+Cost Analysis -> if you want to since we aren’t 
+
+Time Analysis -> Bar diagram for planning, implementing, and testing. Duration
+
+Team Structure -> 
+
+Software config: What are we using and all
+
+Hardware requirement: 
+Version control -> basically scaling
+
+Quality assurance plan: accuracy, consistency, reliability 
+
+Risk Management: what risks does this have
+
+Ref. Papers: description of what you used from a paper
+
+Design methodology: APRIL(idk wtf he said in the audio) relationship diagram, ERD must
+Approach method analogy
+
+Use cases
+Activity (nai hone se v hoga) but sequence and class diagram must
+Conclusion of project, future scopes, reference, and bibliography
+
+

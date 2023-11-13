@@ -21,3 +21,7 @@ error_i = price_i - predicted_price_i
 - Auto Regressior part - (beta_0 + beta_1 . price_{i - 1}), based on previous p terms
 - Moving Average part - (phi_1 . error_{i - 1}), based on previous q terms
 - PACF helps to find p, ACF helps to find q
+- Working [OK]
+
+Classifier_Models
+- Working [OK]

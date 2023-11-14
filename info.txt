@@ -1,0 +1,27 @@
+RNN_LSTM_GRU
+- used to predict the price of stock [Adj Close] for next 2 days using information of past 5 days 
+- Working [OK]
+
+Regression Models
+- Used different methords to predict the stock price of nth day in future by just using value of stock present day 
+(x, y), x - price of stock present day, y - price of stock of nth day in future
+- Out of all the model Multi_Layer_Perceptron and Linear Regression models performed best so we are going to fine tune 
+them to get better R^2 value, R^2 score explaines the percentage of variance that can be explained by predictor 
+variables
+- Working [OK]
+
+ARIMA
+- Used to predict the stock price overtime used statistical methords, like ARMA(p, q) & ARIMA(p, d, q) and then fine
+tuning it, to predict the stock price.
+- ARMA [Auto Regressior Moving Average]
+- ARMA(1, 1)
+price_i = beta_0 + beta_1 . price_{i - 1} + phi_1 . error_{i - 1} + error_i
+predicted_price_i = beta_0 + beta_1 . price_{i - 1} + phi_1 . error_{i - 1}
+error_i = price_i - predicted_price_i
+- Auto Regressior part - (beta_0 + beta_1 . price_{i - 1}), based on previous p terms
+- Moving Average part - (phi_1 . error_{i - 1}), based on previous q terms
+- PACF helps to find p, ACF helps to find q
+- Working [OK]
+
+Classifier_Models
+- Working [OK]

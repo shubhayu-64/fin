@@ -218,6 +218,53 @@ class Stonks:
         ax.set_ylabel('Stock Price (p)', color = 'black', fontsize = 15)
         ax.legend()
         return fig
+    
+    def exponential_smoothing(self, series, alpha):
+        result = [series[0]] # first value is same as series
+        for n in range(1, len(series)):
+            result.append(alpha * series[n] + (1 - alpha) * result[n-1])
+        return result
+
+    def plot_exponential_smoothing(self, series, alphas, label_txt: str, title_txt: str):
+        fig, ax = plt.subplots(figsize=(17, 8))
+        for alpha in alphas:
+            ax.plot(self.exponential_smoothing(series, alpha), label=f"Alpha {alpha}")
+        ax.plot(series.values, "c", label = f"{label_txt}")
+        ax.set_xlabel('Days', color = 'black', fontsize = 15)
+        ax.set_ylabel('Stock Price (p)', color = 'black', fontsize = 15)
+        ax.legend(loc="best")
+        ax.axis('tight')
+        ax.set_title(f"{title_txt}", color = 'black', fontsize = 20)
+        ax.grid(True)
+        return fig
+    
+    def double_exponential_smoothing(self, series, alpha, beta):
+        result = [series[0]]
+        for n in range(1, len(series)+1):
+            if n == 1:
+                level, trend = series[0], series[1] - series[0]
+            if n >= len(series): # forecasting
+                value = result[-1]
+            else:
+                value = series[n]
+            last_level, level = level, alpha * value + (1 - alpha) * (level + trend)
+            trend = beta * (level - last_level) + (1 - beta) * trend
+            result.append(level + trend)
+        return result
+
+    def plot_double_exponential_smoothing(self, series, alphas, betas, label_txt: str, title_txt: str):
+        fig, ax = plt.subplots(figsize=(17, 8))
+        for alpha in alphas:
+            for beta in betas:
+                ax.plot(self.double_exponential_smoothing(series, alpha, beta), label=f"Alpha {alpha}, beta {beta}")
+        ax.plot(series.values, label = f"{label_txt}")
+        ax.set_xlabel('Days', color = 'black', fontsize = 15)
+        ax.set_ylabel('Stock Price (p)', color = 'black', fontsize = 15)
+        ax.legend(loc="best")
+        ax.axis('tight')
+        ax.set_title(f"{title_txt}", color = 'black', fontsize = 20)
+        ax.grid(True)
+        return fig
         
 
     def ui_renderer(self):
@@ -226,7 +273,7 @@ class Stonks:
 
         # Update details with markdown and add more meta docs
         st.write('Welcome to Stonks, a simple web app that allows you to analyze stocks.')
-        st.write("Final Year Project by: [Shubhayu Majumdar](), [Sayan Kumar Ghosh]()")
+        st.write("Final Year Project by: [Shubhayu Majumdar](), [Sayan Kumar Ghosh](), [Vishal Choubey](), [Soumili Saha](), [Jit Karan](),")
 
 
         # Sidebar Inputs
@@ -326,6 +373,24 @@ class Stonks:
 
         st.pyplot(self.buy_sell_ewma3_plot(temp_df, label_txt=f"{self.selected_stock}", title_txt=f"Trading signals for {self.selected_stock} stock"))
 
+
+        st.markdown("""
+            ### Exponential Smoothing
+
+            Single Exponential Smoothing, also known as Simple Exponential Smoothing, is a time series forecasting method for univariate data without a trend or seasonality. It requires an alpha parameter, also called the smoothing factor or smoothing coefficient, to control the rate at which the influence of the observations at prior time steps decay exponentially.
+        """)
+        st.pyplot(self.plot_exponential_smoothing(self.stock_df["Adj Close"], [0.3, 0.05], label_txt=f"{self.selected_stock}", title_txt=f"Single Exponential Smoothing for {self.selected_stock} stock using 0.05 and 0.3 as alpha values"))
+
+        st.markdown("""
+            The smaller the smoothing factor (coefficient), the smoother the time series will be. As the smoothing factor approaches 0, we approach the moving average model so the smoothing factor of 0.05 produces a smoother time series than 0.3. This indicates slow learning (past observations have a large influence on forecasts). A value close to 1 indicates fast learning (that is, only the most recent values influence the forecasts).        
+            
+            **Double Exponential Smoothing (Holt’s Linear Trend Model)** is an extension being a recursive use of Exponential Smoothing twice where beta is the trend smoothing factor, and takes values between 0 and 1. It explicitly adds support for trends.        
+            """)
+        st.pyplot(self.plot_double_exponential_smoothing(self.stock_df["Adj Close"], alphas=[0.9, 0.02], betas=[0.9, 0.02], label_txt=f"{self.selected_stock}", title_txt=f"Double Exponential Smoothing for {self.selected_stock} stock with different alpha and beta values"))
+        
+        st.markdown("""
+                The third main type is Triple Exponential Smoothing (Holt Winters Method) which is an extension of Exponential Smoothing that explicitly adds support for seasonality, or periodic fluctuations.
+        """)
 
 
 

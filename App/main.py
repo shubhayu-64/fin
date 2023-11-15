@@ -265,6 +265,53 @@ class Stonks:
         ax.set_title(f"{title_txt}", color = 'black', fontsize = 20)
         ax.grid(True)
         return fig
+    
+    def plot_macd_signal(self, macd, signal, macd_label_txt: str, sig_label_txt: str, title_txt: str):
+        fig, ax = plt.subplots(figsize=(15, 9))
+        ax.plot(macd, label = f"{macd_label_txt}", color= 'red')
+        ax.plot(signal, label = f"{sig_label_txt}", color= 'blue')
+        ax.set_title(f"{title_txt}", color = 'black', fontsize = 20)
+        ax.set_xlabel('Date', color = 'black', fontsize = 15)
+        ax.legend(loc='upper left')
+        return fig
+    
+
+    def buy_sell_macd(self, signal):
+        Buy = []
+        Sell = []
+        flag = -1
+
+        for i in range(0, len(signal)):
+            if signal['MACD'][i] < signal['Signal Line'][i]:
+                Sell.append(np.nan)
+                if flag != 1:
+                    Buy.append(signal['Adj Close'][i])
+                    flag = 1
+                else:
+                    Buy.append(np.nan)
+            elif signal['MACD'][i] > signal['Signal Line'][i]:
+                Buy.append(np.nan)
+                if flag != 0:
+                    Sell.append(signal['Adj Close'][i])
+                    flag = 0
+                else:
+                    Sell.append(np.nan)
+            else:
+                Buy.append(np.nan)
+                Sell.append(np.nan)
+
+        return (Buy, Sell)
+    
+    def buy_sell_macd_plot(self, data, title_txt: str):
+        fig, ax = plt.subplots(figsize=(20, 10))
+        ax.scatter(data.index, data['Buy_Signal_Price'], color='green', label='Buy', marker='^', alpha=1)
+        ax.scatter(data.index, data['Sell_Signal_Price'], color='red', label='Sell', marker='v', alpha=1)
+        ax.plot(data['Adj Close'], label='Adj Close Price', alpha = 0.35)
+        ax.set_title(f"{title_txt}", color = 'black', fontsize = 20)
+        ax.set_xlabel('Date', color = 'black', fontsize = 15)
+        ax.set_ylabel('Adj Close Price')
+        ax.legend(loc = 'upper left')
+        return fig
         
 
     def ui_renderer(self):
@@ -386,11 +433,39 @@ class Stonks:
             
             **Double Exponential Smoothing (Holt’s Linear Trend Model)** is an extension being a recursive use of Exponential Smoothing twice where beta is the trend smoothing factor, and takes values between 0 and 1. It explicitly adds support for trends.        
             """)
-        st.pyplot(self.plot_double_exponential_smoothing(self.stock_df["Adj Close"], alphas=[0.9, 0.02], betas=[0.9, 0.02], label_txt=f"{self.selected_stock}", title_txt=f"Double Exponential Smoothing for {self.selected_stock} stock with different alpha and beta values"))
+        # st.pyplot(self.plot_double_exponential_smoothing(self.stock_df["Adj Close"], alphas=[0.9, 0.02], betas=[0.9, 0.02], label_txt=f"{self.selected_stock}", title_txt=f"Double Exponential Smoothing for {self.selected_stock} stock with different alpha and beta values"))
         
         st.markdown("""
                 The third main type is Triple Exponential Smoothing (Holt Winters Method) which is an extension of Exponential Smoothing that explicitly adds support for seasonality, or periodic fluctuations.
         """)
+
+        st.markdown("""
+            ### Moving Average Convergence Divergence (MACD)
+                
+            The MACD is a trend-following momentum indicator turning two trend-following indicators, moving averages, into a momentum oscillator by subtracting the longer moving average from the shorter one.
+
+            It is useful although lacking one prediction element - because it is unbounded it is not particularly useful for identifying overbought and oversold levels. Traders can look for signal line crossovers, neutral/centreline crossovers (otherwise known as the 50 level) and divergences from the price action to generate signals. 
+
+            The default parameters are 26 EMA of prices, 12 EMA of prices and a 9-moving average of the difference between the first two.
+        """)
+
+        short_ema = self.stock_df['Adj Close'].ewm(span=12, adjust=False).mean()
+        long_ema = self.stock_df['Adj Close'].ewm(span=26, adjust=False).mean()
+        macd = short_ema - long_ema
+        signal = macd.ewm(span=9, adjust=False).mean()
+
+        st.pyplot(self.plot_macd_signal(macd, signal, macd_label_txt=f"{self.selected_stock} MACD", sig_label_txt=f"Signal Line", title_txt=f"MACD and Signal Line for {self.selected_stock} stock"))
+
+
+        temp_df = self.stock_df.copy()
+        temp_df['MACD'] = macd
+        temp_df['Signal Line'] = signal
+        temp_df['Buy_Signal_Price'], temp_df['Sell_Signal_Price'] = self.buy_sell_macd(temp_df)
+        
+        st.write("When the MACD line crosses above the signal line this indicates a good time to buy.")
+        st.pyplot(self.buy_sell_macd_plot(temp_df, title_txt=f"MACD Buy and Sell Signals for {self.selected_stock} stock"))
+
+
 
 
 

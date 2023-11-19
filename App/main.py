@@ -26,6 +26,7 @@ class Stonks:
         self.end_date = date.today()
         self.stock_df = None
         self.stick = "day"
+        self.rsi_period = 14
 
         # Init functions
         self.stocksFilePath = stocks_filepath
@@ -312,7 +313,30 @@ class Stonks:
         ax.set_ylabel('Adj Close Price')
         ax.legend(loc = 'upper left')
         return fig
-        
+    
+    def plot_rsi(self, title_txt: str, rsi_data):
+        fig, ax = plt.subplots(figsize=(20, 10))
+        ax.set_title(f"{title_txt}", color = 'black', fontsize = 20)
+        ax.set_xlabel('Date', color = 'black', fontsize = 15)
+        ax.set_ylabel('RSI', color = 'black', fontsize = 15)
+        rsi_data.plot(ax=ax)
+        return fig
+    
+
+    def plot_rsi_with_sma(self, data, title_txt: str):
+        fig, ax = plt.subplots(figsize=(20, 10))
+        ax.set_title(f"{title_txt}", color = 'black', fontsize = 20)
+        ax.plot(data['RSI'])
+        ax.set_xlabel('Date', color = 'black', fontsize = 15)
+        ax.axhline(0, linestyle='--', alpha = 0.5, color='gray')
+        ax.axhline(10, linestyle='--', alpha = 0.5, color='orange')
+        ax.axhline(20, linestyle='--', alpha = 0.5, color='green')
+        ax.axhline(30, linestyle='--', alpha = 0.5, color='red')
+        ax.axhline(70, linestyle='--', alpha = 0.5, color='red')
+        ax.axhline(80, linestyle='--', alpha = 0.5, color='green')
+        ax.axhline(90, linestyle='--', alpha = 0.5, color='orange')
+        ax.axhline(100, linestyle='--', alpha = 0.5, color='gray')
+        return fig
 
     def ui_renderer(self):
         st.title('Stonks📈')
@@ -330,6 +354,7 @@ class Stonks:
         self.start_date = st.sidebar.date_input('Start date', date.today() - timedelta(weeks=52))
         self.end_date = st.sidebar.date_input('End date', date.today())
         self.stick = st.sidebar.selectbox('Stick', ["day", "week", "month", "year"])
+        self.rsi_period = st.sidebar.number_input('RSI Period', 14, 100, 14)
 
         # Assertions for all inputs
         assert self.start_date <= self.end_date, 'Error: End date must fall after start date.'
@@ -349,7 +374,7 @@ class Stonks:
                 """)
 
         txt = f"{self.selected_stock} OHLC stock prices from {self.start_date} - {self.end_date}"
-        st.pyplot(self.pandas_candlestick_ohlc(self.stock_df, stick=self.stick, txt = txt))
+        # st.pyplot(self.pandas_candlestick_ohlc(self.stock_df, stick=self.stick, txt = txt))
 
         st.header("Trend-following strategies")
         st.write("Trend-following is about profiting from the prevailing trend through  buying an asset when its price trend goes up, and selling when its trend goes down, expecting price movements to continue.")
@@ -365,8 +390,8 @@ class Stonks:
             the price of a stock over a specified time-frame are mitigated.
         """, unsafe_allow_html = True)
 
-        st.pyplot(self.sma(title_txt=f"20-day Simple Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20]))
-        st.pyplot(self.sma(title_txt=f"20, 50, 100 and 200 day moving averages for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20, 50, 100, 200]))
+        # st.pyplot(self.sma(title_txt=f"20-day Simple Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20]))
+        # st.pyplot(self.sma(title_txt=f"20, 50, 100 and 200 day moving averages for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20, 50, 100, 200]))
         
         st.markdown("""
                 The chart shows that the 20-day moving average is the most sensitive to local changes, and the 200-day moving average the least. Here, the 200-day moving average indicates an overall bullish trend - the stock is trending upward over time. The 20- and 50-day moving averages are at times bearish and at other times bullish.
@@ -386,7 +411,7 @@ class Stonks:
         temp_df["50d"] = np.round(temp_df["Adj Close"].rolling(window = 50, center = False).mean(), 2)
         temp_df["200d"] = np.round(temp_df["Adj Close"].rolling(window = 200, center = False).mean(), 2)
 
-        st.pyplot(self.pandas_candlestick_ohlc(temp_df.loc[str(self.start_date):str(self.end_date),:], otherseries = ["20d", "50d", "200d"], txt = txt, stick=self.stick))
+        # st.pyplot(self.pandas_candlestick_ohlc(temp_df.loc[str(self.start_date):str(self.end_date),:], otherseries = ["20d", "50d", "200d"], txt = txt, stick=self.stick))
 
         st.markdown("""
             ### Exponential Moving Average
@@ -395,8 +420,8 @@ class Stonks:
             equal weight, and values outside of the time period are not included in the average. However, the Exponential Moving Average is a cumulative calculation where a different decreasing weight is assigned to each observation. Past values have a diminishing contribution to the average, while more recent values have a greater contribution. This method allows the moving average to be more responsive to changes in the data.
         """)
 
-        st.pyplot(self.sma(title_txt=f"20-day Exponential Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20]))
-        st.pyplot(self.sma(title_txt=f"20, 50, 100 and 200-day Exponential Moving Averages for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20, 50, 100, 200]))
+        # st.pyplot(self.sma(title_txt=f"20-day Exponential Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20]))
+        # st.pyplot(self.sma(title_txt=f"20, 50, 100 and 200-day Exponential Moving Averages for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20, 50, 100, 200]))
         
 
         st.markdown("""
@@ -408,7 +433,7 @@ class Stonks:
 
             The second is to buy when the middle/medium moving average crosses below the long/slow moving average and the short/fast moving average crosses below the middle/medium moving average. If we use this buy signal the strategy is to sell if the short/fast moving average crosses above the middle/medium moving average.        
         """)
-        st.pyplot(self.tripple_ewma(title_txt=f"Triple Exponential Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", short_ema_span=5, middle_ema_span=21, long_ema_span=63))
+        # st.pyplot(self.tripple_ewma(title_txt=f"Triple Exponential Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", short_ema_span=5, middle_ema_span=21, long_ema_span=63))
 
 
         temp_df = self.stock_df.copy()
@@ -418,7 +443,7 @@ class Stonks:
 
         temp_df["Buy"], temp_df["Sell"] = self.buy_sell_triple_ewma(temp_df)
 
-        st.pyplot(self.buy_sell_ewma3_plot(temp_df, label_txt=f"{self.selected_stock}", title_txt=f"Trading signals for {self.selected_stock} stock"))
+        # st.pyplot(self.buy_sell_ewma3_plot(temp_df, label_txt=f"{self.selected_stock}", title_txt=f"Trading signals for {self.selected_stock} stock"))
 
 
         st.markdown("""
@@ -426,7 +451,7 @@ class Stonks:
 
             Single Exponential Smoothing, also known as Simple Exponential Smoothing, is a time series forecasting method for univariate data without a trend or seasonality. It requires an alpha parameter, also called the smoothing factor or smoothing coefficient, to control the rate at which the influence of the observations at prior time steps decay exponentially.
         """)
-        st.pyplot(self.plot_exponential_smoothing(self.stock_df["Adj Close"], [0.3, 0.05], label_txt=f"{self.selected_stock}", title_txt=f"Single Exponential Smoothing for {self.selected_stock} stock using 0.05 and 0.3 as alpha values"))
+        # st.pyplot(self.plot_exponential_smoothing(self.stock_df["Adj Close"], [0.3, 0.05], label_txt=f"{self.selected_stock}", title_txt=f"Single Exponential Smoothing for {self.selected_stock} stock using 0.05 and 0.3 as alpha values"))
 
         st.markdown("""
             The smaller the smoothing factor (coefficient), the smoother the time series will be. As the smoothing factor approaches 0, we approach the moving average model so the smoothing factor of 0.05 produces a smoother time series than 0.3. This indicates slow learning (past observations have a large influence on forecasts). A value close to 1 indicates fast learning (that is, only the most recent values influence the forecasts).        
@@ -454,7 +479,7 @@ class Stonks:
         macd = short_ema - long_ema
         signal = macd.ewm(span=9, adjust=False).mean()
 
-        st.pyplot(self.plot_macd_signal(macd, signal, macd_label_txt=f"{self.selected_stock} MACD", sig_label_txt=f"Signal Line", title_txt=f"MACD and Signal Line for {self.selected_stock} stock"))
+        # st.pyplot(self.plot_macd_signal(macd, signal, macd_label_txt=f"{self.selected_stock} MACD", sig_label_txt=f"Signal Line", title_txt=f"MACD and Signal Line for {self.selected_stock} stock"))
 
 
         temp_df = self.stock_df.copy()
@@ -463,7 +488,38 @@ class Stonks:
         temp_df['Buy_Signal_Price'], temp_df['Sell_Signal_Price'] = self.buy_sell_macd(temp_df)
         
         st.write("When the MACD line crosses above the signal line this indicates a good time to buy.")
-        st.pyplot(self.buy_sell_macd_plot(temp_df, title_txt=f"MACD Buy and Sell Signals for {self.selected_stock} stock"))
+        # st.pyplot(self.buy_sell_macd_plot(temp_df, title_txt=f"MACD Buy and Sell Signals for {self.selected_stock} stock"))
+
+
+        st.markdown("""
+            ## Momentum Strategies
+            
+            In momentum algorithmic trading strategies stocks have momentum (i.e. upward or downward trends) that we can detect and exploit.
+            
+            ### Relative Strength Index (RSI)
+
+            The RSI is a momentum indicator. A typical momentum strategy will buy stocks that have been showing an upward trend in hopes that the trend will continue, and make predictions based on whether the past recent values were going up or going down. 
+
+            The RSI determines the level of overbought (70) and oversold (30) zones using a default lookback period of 14 i.e. it uses the last 14 values to calculate its values. The idea is to buy when the RSI touches the 30 barrier and sell when it touches the 70 barrier. 
+        """)
+
+        def get_rsi():
+            temp_df = self.stock_df.copy()
+            delta = temp_df['Adj Close'].diff(1)
+            delta.dropna(inplace=True)
+            up, down = delta.clip(lower=0), -delta.clip(upper=0)
+            rs = up.rolling(window=self.rsi_period).mean() / down.abs().rolling(window=self.rsi_period).mean()
+            rsi = 100 - (100 / (1 + rs))
+            return rsi
+        
+        st.pyplot(self.plot_rsi(title_txt=f"RSI for {self.selected_stock} stock", rsi_data=get_rsi()))
+        temp_df = self.stock_df.copy()
+        temp_df['RSI'] = get_rsi()
+
+        st.pyplot(self.plot_rsi_with_sma(temp_df, title_txt=f"RSI with 14-day SMA for {self.selected_stock} stock"))
+
+
+
 
 
 

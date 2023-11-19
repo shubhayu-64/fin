@@ -27,6 +27,7 @@ class Stonks:
         self.stock_df = None
         self.stick = "day"
         self.rsi_period = 14
+        self.mfi_period = 14
 
         # Init functions
         self.stocksFilePath = stocks_filepath
@@ -337,6 +338,33 @@ class Stonks:
         ax.axhline(90, linestyle='--', alpha = 0.5, color='orange')
         ax.axhline(100, linestyle='--', alpha = 0.5, color='gray')
         return fig
+    
+    def plot_rsi_with_ewma(self, data, title_txt: str):
+        fig, ax = plt.subplots(figsize=(20, 10))
+        ax.set_title(f"{title_txt}", color = 'black', fontsize = 20)
+        ax.set_xlabel('Date', color = 'black', fontsize = 15)
+        ax.plot(data['RSI2'])
+        ax.axhline(0, linestyle='--', alpha = 0.5, color='gray')
+        ax.axhline(10, linestyle='--', alpha = 0.5, color='orange')
+        ax.axhline(20, linestyle='--', alpha = 0.5, color='green')
+        ax.axhline(30, linestyle='--', alpha = 0.5, color='red')
+        ax.axhline(70, linestyle='--', alpha = 0.5, color='red')
+        ax.axhline(80, linestyle='--', alpha = 0.5, color='green')
+        ax.axhline(90, linestyle='--', alpha = 0.5, color='orange')
+        ax.axhline(100, linestyle='--', alpha = 0.5, color='gray')
+        return fig
+    
+    def plot_mfi(self, data, title_txt: str):
+        fig, ax = plt.subplots(figsize=(20, 10))
+        ax.plot(data['MFI'], label = 'MFI')
+        ax.axhline(10, linestyle = '--', color = 'orange')
+        ax.axhline(20, linestyle = '--', color = 'blue')
+        ax.axhline(80, linestyle = '--', color = 'blue')
+        ax.axhline(90, linestyle = '--', color = 'orange')
+        ax.set_title(f"{title_txt}", color = 'black', fontsize = 20)
+        ax.set_xlabel('Time periods', color = 'black', fontsize = 15)
+        ax.set_ylabel('MFI Values', color = 'black', fontsize = 15)
+        return fig
 
     def ui_renderer(self):
         st.title('Stonks📈')
@@ -355,6 +383,7 @@ class Stonks:
         self.end_date = st.sidebar.date_input('End date', date.today())
         self.stick = st.sidebar.selectbox('Stick', ["day", "week", "month", "year"])
         self.rsi_period = st.sidebar.number_input('RSI Period', 14, 100, 14)
+        self.mfi_period = st.sidebar.number_input('MFI Period', 14, 100, 14)
 
         # Assertions for all inputs
         assert self.start_date <= self.end_date, 'Error: End date must fall after start date.'
@@ -508,17 +537,68 @@ class Stonks:
             delta = temp_df['Adj Close'].diff(1)
             delta.dropna(inplace=True)
             up, down = delta.clip(lower=0), -delta.clip(upper=0)
+
+            # Relative Strength Index
             rs = up.rolling(window=self.rsi_period).mean() / down.abs().rolling(window=self.rsi_period).mean()
-            rsi = 100 - (100 / (1 + rs))
-            return rsi
-        
-        st.pyplot(self.plot_rsi(title_txt=f"RSI for {self.selected_stock} stock", rsi_data=get_rsi()))
+
+            # Relative Strength Index with Expoential Weighted Moving Average
+            rs_ewma = up.ewm(span=self.rsi_period).mean() / down.abs().ewm(span=self.rsi_period).mean()
+
+            return 100 - (100 / (1 + rs)), 100 - (100 / (1 + rs_ewma))
+
+        # PLot RSI with SMA
         temp_df = self.stock_df.copy()
-        temp_df['RSI'] = get_rsi()
+        temp_df['RSI'], temp_df['RSI2'] = get_rsi()
 
-        st.pyplot(self.plot_rsi_with_sma(temp_df, title_txt=f"RSI with 14-day SMA for {self.selected_stock} stock"))
+        st.pyplot(self.plot_rsi(title_txt=f"RSI for {self.selected_stock} stock", rsi_data=temp_df["RSI"]))
+        st.pyplot(self.plot_rsi_with_sma(temp_df, title_txt=f"RSI with {self.rsi_period}-day SMA for {self.selected_stock} stock"))
+        st.pyplot(self.plot_rsi_with_ewma(temp_df, title_txt=f"RSI with {self.rsi_period}-day EWMA for {self.selected_stock} stock"))
 
+        st.markdown("""
+            ### Money Flow Index (MFI)
+            
+            Money Flow Index (MFI) is a technical oscillator, and momentum indicator, that uses price and volume data for identifying overbought or oversold signals in an asset. It can also be used to spot divergences which warn of a trend change in price. The oscillator moves between 0 and 100 and a reading of above 80 implies overbought conditions, and below 20 implies oversold conditions.
 
+            It is related to the Relative Strength Index (RSI) but incorporates volume, whereas the RSI only considers price. 
+        """)
+
+        def get_mfi():
+            temp_df = self.stock_df.copy()
+            typical_price = (temp_df['High'] + temp_df['Low'] + temp_df['Close']) / 3
+            money_flow = typical_price * temp_df['Volume']
+
+            # Get all positive and negative money flows
+            positive_flow = []
+            negative_flow = []
+
+            # Loop through typical price
+            for i in range(1, len(typical_price)):
+                if typical_price[i] > typical_price[i-1]:
+                    positive_flow.append(money_flow[i-1])
+                    negative_flow.append(0)
+                elif typical_price[i] < typical_price[i-1]:
+                    negative_flow.append(money_flow[i-1])
+                    positive_flow.append(0)
+                else:
+                    positive_flow.append(0)
+                    negative_flow.append(0)
+            
+            positive_mf = []
+            negative_mf = []
+
+            for i in range(self.mfi_period-1, len(positive_flow)):
+                positive_mf.append(sum(positive_flow[i + 1 - self.mfi_period : i+1]))
+            for i in range(self.mfi_period-1, len(negative_flow)):
+                negative_mf.append(sum(negative_flow[i + 1 - self.mfi_period : i+1]))
+            
+            mfi = 100 * (np.array(positive_mf) / (np.array(positive_mf) + np.array(negative_mf)))
+            mfi = np.append([np.nan]*self.mfi_period, mfi)
+
+            return mfi
+        
+        temp_df = self.stock_df.copy()
+        temp_df['MFI'] = get_mfi()
+        st.pyplot(self.plot_mfi(temp_df, title_txt=f"MFI for {self.selected_stock} stock"))
 
 
 

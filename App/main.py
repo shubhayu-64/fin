@@ -436,13 +436,27 @@ class Stonks:
         ax.set_ylabel('Price', fontsize = 15)
         ax.legend(loc = 'upper left')
         return fig
+    
+    def buy_sell_obv_plot(self, data, title_txt: str):
+        fig, ax = plt.subplots(figsize=(17, 8))
+        plt.style.use('ggplot')
+        ax.plot(data['Adj Close'], label = 'Adjusted Close', alpha = 0.5)
+        ax.scatter(data.index, data['Buy'], label = 'Buy Signal', marker = '^', alpha = 1, color = 'green')
+        ax.scatter(data.index, data['Sell'], label = 'Sell Signal', marker = 'v', alpha = 1, color = 'red')
+        ax.set_title(title_txt, color = 'black', fontsize = 20)
+        ax.set_xlabel('Date', fontsize = 15)
+        ax.set_ylabel('Price', fontsize = 15)
+        ax.legend(loc = 'upper left')
+        return fig
         
 
     def ui_renderer(self):
         st.title('Stonks📈')
         st.image('https://i.ytimg.com/vi/if-2M3K1tqk/maxresdefault.jpg')
 
-        # Update details with markdown and add more meta docs
+        # 
+        # TODO: Update details with markdown and add more meta docs
+        # 
         st.write('Welcome to Stonks, a simple web app that allows you to analyze stocks.')
         st.write("Final Year Project by: [Shubhayu Majumdar](), [Sayan Kumar Ghosh](), [Vishal Choubey](), [Soumili Saha](), [Jit Karan](),")
 
@@ -876,12 +890,39 @@ class Stonks:
         temp_df['OBV'] = get_obv()
         temp_df['OBV_EMA'] = temp_df['OBV'].ewm(span=self.on_balance_volumne_period).mean()
 
-        st.pyplot(self.plot_obv_ema(temp_df, title_txt=f"On Balance Volume for {self.selected_stock} stock"))
+        # st.pyplot(self.plot_obv_ema(temp_df, title_txt=f"On Balance Volume for {self.selected_stock} stock"))
 
+        def buy_sell_obv(signal, col1, col2):
+            sigPriceBuy = []
+            sigPriceSell = []
+            flag = -1
 
-        # Temporary dataframe dump 
-        # st.dataframe(temp_df)
+            for i in range(0, len(signal)):
+                # If OBV > OBV_EMA then buy --> col1 => If OBV < OBV_EMA then sell => 'OBV_EMA'
+                if signal[col1][i] < signal[col2][i] and flag != 1:
+                    sigPriceBuy.append(signal['Adj Close'][i])
+                    sigPriceSell.append(np.nan)
+                    flag = 1
+                # If OBV < OBV_EMA then sell
+                elif signal[col1][i] > signal[col2][i] and flag != 0:
+                    sigPriceSell.append(signal['Adj Close'][i])
+                    sigPriceBuy.append(np.nan)
+                    flag = 0
+                else:
+                    sigPriceSell.append(np.nan)
+                    sigPriceBuy.append(np.nan)
 
+            return (sigPriceBuy, sigPriceSell)
+
+        temp_df['Buy'], temp_df['Sell'] = buy_sell_obv(temp_df, 'OBV', 'OBV_EMA')
+
+        # st.pyplot(self.buy_sell_obv_plot(temp_df, title_txt=f"On Balance Volume Buy and Sell Signals for {self.selected_stock} stock"))
+        
+        st.markdown("""
+            ## Conclusion
+
+            It is almost certainly better to choose technical indicators that complement each other, not just those that move in unison and generate the same signals. The intuition here is that the more indicators you have that confirm each other, the better your chances are to profit. This can be done by combining strategies to form a system, and looking for multiple signals.                    
+        """)
 
 
 

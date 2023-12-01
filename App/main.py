@@ -103,7 +103,6 @@ class Stonks:
         else:
             raise ValueError('Valid inputs to argument "stick" include the strings "day", "week", "month", "year", or a positive integer')
     
-        # print(plotdat)
         # Set plot parameters, including the axis object ax used for plotting
         fig, ax = plt.subplots()
         fig.subplots_adjust(bottom=0.2)
@@ -144,7 +143,6 @@ class Stonks:
         plt.xlabel('Date', color = 'black', fontsize = 15)
         plt.ylabel('Stock Price (p)', color = 'black', fontsize = 15)
     
-        # plt.show()
         return fig
     
     def sma(self, title_txt: str, label_txt: str, days: List[int]):
@@ -451,19 +449,20 @@ class Stonks:
         
 
     def ui_renderer(self):
-        st.title('Stonks📈')
+        st.title('Stonks 📈')
         st.image('https://i.ytimg.com/vi/if-2M3K1tqk/maxresdefault.jpg')
 
         # 
         # TODO: Update details with markdown and add more meta docs
         # 
         st.write('Welcome to Stonks, a simple web app that allows you to analyze stocks.')
-        st.write("Final Year Project by: [Shubhayu Majumdar](), [Sayan Kumar Ghosh](), [Vishal Choubey](), [Soumili Saha](), [Jit Karan](),")
-
+        st.write("Final Year Project by: [Sayan Kumar Ghosh](gsayankr02@gmail.com), [Vishal Choubey](vishalchoubey1019@gmail.com), [Jit Karan](jitkaran55@gmail.com), [Soumili Saha](ssoumilisaha2001@gmail.com), [Shubhayu Majumdar](shubhayumajumdar64@gmail.com)")
+        
+        st.markdown("""---""")
 
         # Sidebar Inputs
         stock_names = [stock.name for stock in self.stocks]
-        self.selected_stock = st.sidebar.selectbox('Select a stock:', stock_names)
+        self.selected_stock = st.sidebar.selectbox('Select a Stock:', stock_names)
         self.selected_ticker = self.stocks[stock_names.index(self.selected_stock)].ticker
         self.start_date = st.sidebar.date_input('Start date', date.today() - timedelta(weeks=52))
         self.end_date = st.sidebar.date_input('End date', date.today())
@@ -485,12 +484,23 @@ class Stonks:
 
 
         # Assertions for all inputs
-        assert self.start_date <= self.end_date, 'Error: End date must fall after start date.'
-        assert self.end_date <= date.today(), 'Error: End date must not be in the future.'
+        if not self.start_date <= self.end_date:
+            st.error("Error: Start date must fall before end date.")
+            st.toast("Error: Start date must fall before end date.")
+            st.stop()
+        
+        if not self.end_date <= date.today():
+            st.error("Error: End date must not be in the future.")
+            st.toast("Error: End date must not be in the future.")
+            st.stop()
 
         st.subheader(f"Stonks Analysis on {self.selected_stock} from {self.start_date} to {self.end_date}")
 
         self.get_stock_data()
+
+        if self.stock_df.empty:
+            st.error("Error: No data found for selected stock.")
+            st.stop()
 
         st.dataframe(self.stock_df)
 
@@ -502,7 +512,7 @@ class Stonks:
                 """)
 
         txt = f"{self.selected_stock} OHLC stock prices from {self.start_date} - {self.end_date}"
-        # st.pyplot(self.pandas_candlestick_ohlc(self.stock_df, stick=self.stick, txt = txt))
+        st.pyplot(self.pandas_candlestick_ohlc(self.stock_df, stick=self.stick, txt = txt))
 
         st.header("Trend-following strategies")
         st.write("Trend-following is about profiting from the prevailing trend through  buying an asset when its price trend goes up, and selling when its trend goes down, expecting price movements to continue.")
@@ -518,8 +528,8 @@ class Stonks:
             the price of a stock over a specified time-frame are mitigated.
         """, unsafe_allow_html = True)
 
-        # st.pyplot(self.sma(title_txt=f"20-day Simple Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20]))
-        # st.pyplot(self.sma(title_txt=f"20, 50, 100 and 200 day moving averages for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20, 50, 100, 200]))
+        st.pyplot(self.sma(title_txt=f"20-day Simple Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20]))
+        st.pyplot(self.sma(title_txt=f"20, 50, 100 and 200 day moving averages for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20, 50, 100, 200]))
         
         st.markdown("""
                 The chart shows that the 20-day moving average is the most sensitive to local changes, and the 200-day moving average the least. Here, the 200-day moving average indicates an overall bullish trend - the stock is trending upward over time. The 20- and 50-day moving averages are at times bearish and at other times bullish.
@@ -539,7 +549,7 @@ class Stonks:
         temp_df["50d"] = np.round(temp_df["Adj Close"].rolling(window = 50, center = False).mean(), 2)
         temp_df["200d"] = np.round(temp_df["Adj Close"].rolling(window = 200, center = False).mean(), 2)
 
-        # st.pyplot(self.pandas_candlestick_ohlc(temp_df.loc[str(self.start_date):str(self.end_date),:], otherseries = ["20d", "50d", "200d"], txt = txt, stick=self.stick))
+        st.pyplot(self.pandas_candlestick_ohlc(temp_df.loc[str(self.start_date):str(self.end_date),:], otherseries = ["20d", "50d", "200d"], txt = txt, stick=self.stick))
 
         st.markdown("""
             ### Exponential Moving Average
@@ -548,8 +558,8 @@ class Stonks:
             equal weight, and values outside of the time period are not included in the average. However, the Exponential Moving Average is a cumulative calculation where a different decreasing weight is assigned to each observation. Past values have a diminishing contribution to the average, while more recent values have a greater contribution. This method allows the moving average to be more responsive to changes in the data.
         """)
 
-        # st.pyplot(self.sma(title_txt=f"20-day Exponential Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20]))
-        # st.pyplot(self.sma(title_txt=f"20, 50, 100 and 200-day Exponential Moving Averages for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20, 50, 100, 200]))
+        st.pyplot(self.sma(title_txt=f"20-day Exponential Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20]))
+        st.pyplot(self.sma(title_txt=f"20, 50, 100 and 200-day Exponential Moving Averages for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", days=[20, 50, 100, 200]))
         
 
         st.markdown("""
@@ -561,7 +571,7 @@ class Stonks:
 
             The second is to buy when the middle/medium moving average crosses below the long/slow moving average and the short/fast moving average crosses below the middle/medium moving average. If we use this buy signal the strategy is to sell if the short/fast moving average crosses above the middle/medium moving average.        
         """)
-        # st.pyplot(self.tripple_ewma(title_txt=f"Triple Exponential Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", short_ema_span=5, middle_ema_span=21, long_ema_span=63))
+        st.pyplot(self.tripple_ewma(title_txt=f"Triple Exponential Moving Average for {self.selected_stock} stock", label_txt=f"{self.selected_stock}", short_ema_span=5, middle_ema_span=21, long_ema_span=63))
 
 
         temp_df = self.stock_df.copy()
@@ -571,7 +581,7 @@ class Stonks:
 
         temp_df["Buy"], temp_df["Sell"] = self.buy_sell_triple_ewma(temp_df)
 
-        # st.pyplot(self.buy_sell_ewma3_plot(temp_df, label_txt=f"{self.selected_stock}", title_txt=f"Trading signals for {self.selected_stock} stock"))
+        st.pyplot(self.buy_sell_ewma3_plot(temp_df, label_txt=f"{self.selected_stock}", title_txt=f"Trading signals for {self.selected_stock} stock"))
 
 
         st.markdown("""
@@ -579,14 +589,14 @@ class Stonks:
 
             Single Exponential Smoothing, also known as Simple Exponential Smoothing, is a time series forecasting method for univariate data without a trend or seasonality. It requires an alpha parameter, also called the smoothing factor or smoothing coefficient, to control the rate at which the influence of the observations at prior time steps decay exponentially.
         """)
-        # st.pyplot(self.plot_exponential_smoothing(self.stock_df["Adj Close"], [0.3, 0.05], label_txt=f"{self.selected_stock}", title_txt=f"Single Exponential Smoothing for {self.selected_stock} stock using 0.05 and 0.3 as alpha values"))
+        st.pyplot(self.plot_exponential_smoothing(self.stock_df["Adj Close"], [0.3, 0.05], label_txt=f"{self.selected_stock}", title_txt=f"Single Exponential Smoothing for {self.selected_stock} stock using 0.05 and 0.3 as alpha values"))
 
         st.markdown("""
             The smaller the smoothing factor (coefficient), the smoother the time series will be. As the smoothing factor approaches 0, we approach the moving average model so the smoothing factor of 0.05 produces a smoother time series than 0.3. This indicates slow learning (past observations have a large influence on forecasts). A value close to 1 indicates fast learning (that is, only the most recent values influence the forecasts).        
             
             **Double Exponential Smoothing (Holt’s Linear Trend Model)** is an extension being a recursive use of Exponential Smoothing twice where beta is the trend smoothing factor, and takes values between 0 and 1. It explicitly adds support for trends.        
             """)
-        # st.pyplot(self.plot_double_exponential_smoothing(self.stock_df["Adj Close"], alphas=[0.9, 0.02], betas=[0.9, 0.02], label_txt=f"{self.selected_stock}", title_txt=f"Double Exponential Smoothing for {self.selected_stock} stock with different alpha and beta values"))
+        st.pyplot(self.plot_double_exponential_smoothing(self.stock_df["Adj Close"], alphas=[0.9, 0.02], betas=[0.9, 0.02], label_txt=f"{self.selected_stock}", title_txt=f"Double Exponential Smoothing for {self.selected_stock} stock with different alpha and beta values"))
         
         st.markdown("""
                 The third main type is Triple Exponential Smoothing (Holt Winters Method) which is an extension of Exponential Smoothing that explicitly adds support for seasonality, or periodic fluctuations.
@@ -607,7 +617,7 @@ class Stonks:
         macd = short_ema - long_ema
         signal = macd.ewm(span=9, adjust=False).mean()
 
-        # st.pyplot(self.plot_macd_signal(macd, signal, macd_label_txt=f"{self.selected_stock} MACD", sig_label_txt=f"Signal Line", title_txt=f"MACD and Signal Line for {self.selected_stock} stock"))
+        st.pyplot(self.plot_macd_signal(macd, signal, macd_label_txt=f"{self.selected_stock} MACD", sig_label_txt=f"Signal Line", title_txt=f"MACD and Signal Line for {self.selected_stock} stock"))
 
 
         temp_df = self.stock_df.copy()
@@ -616,7 +626,7 @@ class Stonks:
         temp_df['Buy_Signal_Price'], temp_df['Sell_Signal_Price'] = self.buy_sell_macd(temp_df)
         
         st.write("When the MACD line crosses above the signal line this indicates a good time to buy.")
-        # st.pyplot(self.buy_sell_macd_plot(temp_df, title_txt=f"MACD Buy and Sell Signals for {self.selected_stock} stock"))
+        st.pyplot(self.buy_sell_macd_plot(temp_df, title_txt=f"MACD Buy and Sell Signals for {self.selected_stock} stock"))
 
 
         st.markdown("""
@@ -649,9 +659,9 @@ class Stonks:
         temp_df = self.stock_df.copy()
         temp_df['RSI'], temp_df['RSI2'] = get_rsi()
 
-        # st.pyplot(self.plot_rsi(title_txt=f"RSI for {self.selected_stock} stock", rsi_data=temp_df["RSI"]))
-        # st.pyplot(self.plot_rsi_with_sma(temp_df, title_txt=f"RSI with {self.rsi_period}-day SMA for {self.selected_stock} stock"))
-        # st.pyplot(self.plot_rsi_with_ewma(temp_df, title_txt=f"RSI with {self.rsi_period}-day EWMA for {self.selected_stock} stock"))
+        st.pyplot(self.plot_rsi(title_txt=f"RSI for {self.selected_stock} stock", rsi_data=temp_df["RSI"]))
+        st.pyplot(self.plot_rsi_with_sma(temp_df, title_txt=f"RSI with {self.rsi_period}-day SMA for {self.selected_stock} stock"))
+        st.pyplot(self.plot_rsi_with_ewma(temp_df, title_txt=f"RSI with {self.rsi_period}-day EWMA for {self.selected_stock} stock"))
 
         st.markdown("""
             ### Money Flow Index (MFI)
@@ -697,7 +707,7 @@ class Stonks:
         
         temp_df = self.stock_df.copy()
         temp_df['MFI'] = get_mfi()
-        # st.pyplot(self.plot_mfi(temp_df, title_txt=f"MFI for {self.selected_stock} stock"))
+        st.pyplot(self.plot_mfi(temp_df, title_txt=f"MFI for {self.selected_stock} stock"))
 
         def get_mfi_signal(data, high, low):
             buy_signal = []
@@ -717,7 +727,7 @@ class Stonks:
             return (buy_signal, sell_signal)
         
         temp_df["Buy"], temp_df["Sell"] = get_mfi_signal(temp_df, self.mfi_upper_band, self.mfi_lower_band)
-        # st.pyplot(self.mfi_buy_sell_plot(temp_df, title_txt=f"MFI Buy and Sell Signals for {self.selected_stock} stock"))
+        st.pyplot(self.mfi_buy_sell_plot(temp_df, title_txt=f"MFI Buy and Sell Signals for {self.selected_stock} stock"))
 
         st.markdown("""
             ### Stochastic Oscillator
@@ -751,59 +761,31 @@ class Stonks:
 
         def get_stochastic_oscillator():
             temp_df = self.stock_df.copy()
+            
             temp_df["L"] = temp_df['Low'].rolling(window=self.stochastic_oscillator_period).min()
             temp_df["H"] = temp_df['High'].rolling(window=self.stochastic_oscillator_period).max()
             temp_df['%K'] = 100*((temp_df['Close'] - temp_df['L']) / (temp_df['H'] - temp_df['L']) )
             temp_df['%D'] = temp_df['%K'].rolling(window=3).mean()
-
-            #Create a column in the DataFrame showing "TRUE" if sell entry signal is given and "FALSE" otherwise. 
-            #A sell is initiated when the %K line crosses down through the %D line and the value of the oscillator is above 80 
             temp_df['Sell Entry'] = ((temp_df['%K'] < temp_df['%D']) & (temp_df['%K'].shift(1) > temp_df['%D'].shift(1))) & (temp_df['%D'] > self.stochastic_oscillator_upper_band) 
-
-            #Create a column in the DataFrame showing "TRUE" if sell exit signal is given and "FALSE" otherwise. 
-            #A sell exit signal is given when the %K line crosses back up through the %D line 
             temp_df['Sell Exit'] = ((temp_df['%K'] > temp_df['%D']) & (temp_df['%K'].shift(1) < temp_df['%D'].shift(1))) 
 
-            #create a placeholder column to populate with short positions (-1 for short and 0 for flat) using boolean values created above 
-            temp_df['Short'] = np.nan 
-            temp_df.loc[temp_df['Sell Entry'],'Short'] = -1 
-            temp_df.loc[temp_df['Sell Exit'],'Short'] = 0 
-
-            #Set initial position on day 1 to flat 
-            temp_df['Short'][0] = 0 
-
-            #Forward fill the position column to represent the holding of positions through time 
-            temp_df['Short'] = temp_df['Short'].fillna(method='pad') 
-
-            #Create a column in the DataFrame showing "TRUE" if buy entry signal is given and "FALSE" otherwise. 
-            #A buy is initiated when the %K line crosses up through the %D line and the value of the oscillator is below 20 
+            temp_df['Short'] = np.where(temp_df['Sell Entry'], -1, np.where(temp_df['Sell Exit'], 0, 0))
+            temp_df['Short'] = temp_df['Short'].fillna(method='pad')
             temp_df['Buy Entry'] = ((temp_df['%K'] > temp_df['%D']) & (temp_df['%K'].shift(1) < temp_df['%D'].shift(1))) & (temp_df['%D'] < self.stochastic_oscillator_lower_band) 
-
-            #Create a column in the DataFrame showing "TRUE" if buy exit signal is given and "FALSE" otherwise. 
-            #A buy exit signal is given when the %K line crosses back down through the %D line 
             temp_df['Buy Exit'] = ((temp_df['%K'] < temp_df['%D']) & (temp_df['%K'].shift(1) > temp_df['%D'].shift(1))) 
 
-            #create a placeholder column to populate with long positions (1 for long and 0 for flat) using boolean values created above 
-            temp_df['Long'] = np.nan  
-            temp_df.loc[temp_df['Buy Entry'],'Long'] = 1  
-            temp_df.loc[temp_df['Buy Exit'],'Long'] = 0  
+            temp_df['Long'] = np.where(temp_df['Buy Entry'], 1, np.where(temp_df['Buy Exit'], 0, 0))
+            temp_df['Long'] = temp_df['Long'].fillna(method='pad')
+            temp_df['Long'][0] = 0
 
-            #Set initial position on day 1 to flat 
-            temp_df['Long'][0] = 0  
-
-            #Forward fill the position column to represent the holding of positions through time 
-            temp_df['Long'] = temp_df['Long'].fillna(method='pad') 
-
-            #Add Long and Short positions together to get final strategy position (1 for long, -1 for short and 0 for flat) 
             temp_df['Position'] = temp_df['Long'] + temp_df['Short']
-
             temp_df['Market Returns'] = temp_df['Close'].pct_change()
-
             temp_df['Strategy Returns'] = temp_df['Market Returns'] * temp_df['Position'].shift(1)
+
             return temp_df
 
         temp_df = get_stochastic_oscillator()
-        # st.pyplot(self.plot_stochastic_oscillator(temp_df, title_txt=f"Stochastic Oscillator for {self.selected_stock} stock"))
+        st.pyplot(self.plot_stochastic_oscillator(temp_df, title_txt=f"Stochastic Oscillator for {self.selected_stock} stock"))
 
         st.markdown("""
             ## Volatility trading strategies
@@ -836,18 +818,18 @@ class Stonks:
         
 
         temp_df, column_list = get_bollinger_bands()
-        # st.pyplot(self.plot_bollinger_bands(temp_df, column_list, title_txt=f"Bollinger Bands for {self.selected_stock} stock"))
-        # st.pyplot(self.plot_bollinger_bands_shaded(temp_df, title_txt=f"Shaded Bollinger Bands region for {self.selected_stock} stock"))
+        st.pyplot(self.plot_bollinger_bands(temp_df, column_list, title_txt=f"Bollinger Bands for {self.selected_stock} stock"))
+        st.pyplot(self.plot_bollinger_bands_shaded(temp_df, title_txt=f"Shaded Bollinger Bands region for {self.selected_stock} stock"))
         
         def get_signal_bb(data):
-            buy_signal = [] #buy list
-            sell_signal = [] #sell list
+            buy_signal = [] 
+            sell_signal = [] 
 
             for i in range(len(data['Close'])):
-                if data['Close'][i] > data['Upper'][i]: #Then you should sell 
+                if data['Close'][i] > data['Upper'][i]: 
                     buy_signal.append(np.nan)
                     sell_signal.append(data['Close'][i])
-                elif data['Close'][i] < data['Lower'][i]: #Then you should buy
+                elif data['Close'][i] < data['Lower'][i]:
                     sell_signal.append(np.nan)
                     buy_signal.append(data['Close'][i])
                 else:
@@ -856,7 +838,7 @@ class Stonks:
             return (buy_signal, sell_signal)
         
         temp_df['Buy'], temp_df['Sell'] = get_signal_bb(temp_df)
-        # st.pyplot(self.plot_bollinger_bands_shaded_with_signals(temp_df, title_txt=f"Bollinger Bands with Buy and Sell Signals for {self.selected_stock} stock"))
+        st.pyplot(self.plot_bollinger_bands_shaded_with_signals(temp_df, title_txt=f"Bollinger Bands with Buy and Sell Signals for {self.selected_stock} stock"))
         
 
         st.markdown("""
@@ -890,7 +872,7 @@ class Stonks:
         temp_df['OBV'] = get_obv()
         temp_df['OBV_EMA'] = temp_df['OBV'].ewm(span=self.on_balance_volumne_period).mean()
 
-        # st.pyplot(self.plot_obv_ema(temp_df, title_txt=f"On Balance Volume for {self.selected_stock} stock"))
+        st.pyplot(self.plot_obv_ema(temp_df, title_txt=f"On Balance Volume for {self.selected_stock} stock"))
 
         def buy_sell_obv(signal, col1, col2):
             sigPriceBuy = []
@@ -916,16 +898,14 @@ class Stonks:
 
         temp_df['Buy'], temp_df['Sell'] = buy_sell_obv(temp_df, 'OBV', 'OBV_EMA')
 
-        # st.pyplot(self.buy_sell_obv_plot(temp_df, title_txt=f"On Balance Volume Buy and Sell Signals for {self.selected_stock} stock"))
+        st.pyplot(self.buy_sell_obv_plot(temp_df, title_txt=f"On Balance Volume Buy and Sell Signals for {self.selected_stock} stock"))
         
+        st.markdown("""---""")
         st.markdown("""
             ## Conclusion
 
             It is almost certainly better to choose technical indicators that complement each other, not just those that move in unison and generate the same signals. The intuition here is that the more indicators you have that confirm each other, the better your chances are to profit. This can be done by combining strategies to form a system, and looking for multiple signals.                    
         """)
-
-
-
 
 
 if __name__ == '__main__':

@@ -28,6 +28,13 @@ class Stonks:
         self.stick = "day"
         self.rsi_period = 14
         self.mfi_period = 14
+        self.mfi_upper_band = 80
+        self.mfi_lower_band = 20
+        self.stochastic_oscillator_period = 14
+        self.stochastic_oscillator_upper_band = 80
+        self.stochastic_oscillator_lower_band = 20
+        self.bollinger_band_period = 20
+        self.on_balance_volumne_period = 20
 
         # Init functions
         self.stocksFilePath = stocks_filepath
@@ -365,6 +372,71 @@ class Stonks:
         ax.set_xlabel('Time periods', color = 'black', fontsize = 15)
         ax.set_ylabel('MFI Values', color = 'black', fontsize = 15)
         return fig
+    
+    def mfi_buy_sell_plot(self, data, title_txt: str):
+        fig, ax = plt.subplots(figsize=(20, 10))
+        ax.plot(data['Close'], label = 'Close Price', alpha = 0.5)
+        ax.scatter(data.index, data['Buy'], color = 'green', label = 'Buy Signal', marker = '^', alpha = 1)
+        ax.scatter(data.index, data['Sell'], color = 'red', label = 'Sell Signal', marker = 'v', alpha = 1)
+        ax.set_title(f"{title_txt}", color = 'black', fontsize = 20)
+        ax.set_xlabel('Date', color = 'black', fontsize = 15)
+        ax.set_ylabel('Close Price', color = 'black', fontsize = 15)
+        ax.legend(loc='upper left')
+        return fig
+    
+    def plot_stochastic_oscillator(self, data, title_txt: str):
+        fig, ax = plt.subplots(figsize=(20, 10))
+        data[['Strategy Returns','Market Returns']].cumsum().plot(ax=ax)
+        ax.set_title('Strategy returns versus AZN.L returns', color = 'black', fontsize = 20)
+        return fig
+
+    def plot_bollinger_bands(self, data, column_list, title_txt: str):
+        fig, ax = plt.subplots(figsize=(20, 10))
+        data[column_list].plot(ax=ax)
+        plt.style.use('ggplot')
+        ax.set_title(title_txt, color = 'black', fontsize = 20)
+        ax.set_ylabel('Close Price', color = 'black', fontsize = 15)
+        return fig
+    
+    def plot_bollinger_bands_shaded(self, data, title_txt: str):
+        fig, ax = plt.subplots(figsize=(20,10))
+        x_axis = data.index
+        ax.fill_between(x_axis, data['Upper'], data['Lower'], color='grey')
+        ax.plot(data['Close'], color='gold', lw=3, label = 'Close Price') #lw = line width
+        ax.plot(data['SMA'], color='blue', lw=3, label = 'Simple Moving Average')
+        ax.set_title(title_txt, color = 'black', fontsize = 20)
+        ax.set_xlabel('Date', color = 'black', fontsize = 15)
+        ax.set_ylabel('Close Price', color = 'black', fontsize = 15)
+        plt.xticks(rotation = 45)
+        ax.legend()
+        return fig
+    
+    def plot_bollinger_bands_shaded_with_signals(self, data, title_txt: str):
+        fig, ax = plt.subplots(figsize=(20,10))
+        x_axis = data.index
+        ax.fill_between(x_axis, data['Upper'], data['Lower'], color='grey')
+        ax.plot(data['Close'], color='gold', lw=3, label = 'Close Price', alpha = 0.5)
+        ax.plot(data['SMA'], color='blue', lw=3, label = 'Moving Average', alpha = 0.5)
+        ax.scatter(x_axis, data['Buy'], color='green', lw=3, label = 'Buy', marker = '^', alpha = 1)
+        ax.scatter(x_axis, data['Sell'], color='red', lw=3, label = 'Sell', marker = 'v', alpha = 1)
+        ax.set_title(title_txt, color = 'black', fontsize = 20)
+        ax.set_xlabel('Date', color = 'black', fontsize = 15)
+        ax.set_ylabel('Close Price', color = 'black', fontsize = 15)
+        plt.xticks(rotation = 45)
+        ax.legend()
+        return fig
+    
+    def plot_obv_ema(self, data, title_txt: str):
+        fig, ax = plt.subplots(figsize=(17, 8))
+        plt.style.use('ggplot')
+        ax.plot(data['OBV'], label = 'OBV', color = 'orange')
+        ax.plot(data['OBV_EMA'], label = 'OBV_EMA', color = 'purple')
+        ax.set_title(title_txt, color = 'black', fontsize = 20)
+        ax.set_xlabel('Date', fontsize = 15)
+        ax.set_ylabel('Price', fontsize = 15)
+        ax.legend(loc = 'upper left')
+        return fig
+        
 
     def ui_renderer(self):
         st.title('Stonks📈')
@@ -382,8 +454,21 @@ class Stonks:
         self.start_date = st.sidebar.date_input('Start date', date.today() - timedelta(weeks=52))
         self.end_date = st.sidebar.date_input('End date', date.today())
         self.stick = st.sidebar.selectbox('Stick', ["day", "week", "month", "year"])
+        st.sidebar.markdown("""---""")
         self.rsi_period = st.sidebar.number_input('RSI Period', 14, 100, 14)
+        st.sidebar.markdown("""---""")
         self.mfi_period = st.sidebar.number_input('MFI Period', 14, 100, 14)
+        self.mfi_upper_band = st.sidebar.number_input('MFI Upper Band', 50, 100, 80)
+        self.mfi_lower_band = st.sidebar.number_input('MFI Lower Band', 0, 50, 20)
+        st.sidebar.markdown("""---""")
+        self.stochastic_oscillator_period = st.sidebar.number_input('Stochastic Oscillator Period', 14, 100, 14)
+        self.stochastic_oscillator_upper_band = st.sidebar.number_input('Stochastic Oscillator Upper Band', 50, 100, 80)
+        self.stochastic_oscillator_lower_band = st.sidebar.number_input('Stochastic Oscillator Lower Band', 0, 50, 20)
+        st.sidebar.markdown("""---""")
+        self.bollinger_band_period = st.sidebar.number_input('Bollinger Band Period', 20, 100, 20)
+        st.sidebar.markdown("""---""")
+        self.on_balance_volumne_period = st.sidebar.number_input('On Balance Volumne Period', 20, 100, 20)
+
 
         # Assertions for all inputs
         assert self.start_date <= self.end_date, 'Error: End date must fall after start date.'
@@ -550,9 +635,9 @@ class Stonks:
         temp_df = self.stock_df.copy()
         temp_df['RSI'], temp_df['RSI2'] = get_rsi()
 
-        st.pyplot(self.plot_rsi(title_txt=f"RSI for {self.selected_stock} stock", rsi_data=temp_df["RSI"]))
-        st.pyplot(self.plot_rsi_with_sma(temp_df, title_txt=f"RSI with {self.rsi_period}-day SMA for {self.selected_stock} stock"))
-        st.pyplot(self.plot_rsi_with_ewma(temp_df, title_txt=f"RSI with {self.rsi_period}-day EWMA for {self.selected_stock} stock"))
+        # st.pyplot(self.plot_rsi(title_txt=f"RSI for {self.selected_stock} stock", rsi_data=temp_df["RSI"]))
+        # st.pyplot(self.plot_rsi_with_sma(temp_df, title_txt=f"RSI with {self.rsi_period}-day SMA for {self.selected_stock} stock"))
+        # st.pyplot(self.plot_rsi_with_ewma(temp_df, title_txt=f"RSI with {self.rsi_period}-day EWMA for {self.selected_stock} stock"))
 
         st.markdown("""
             ### Money Flow Index (MFI)
@@ -598,7 +683,204 @@ class Stonks:
         
         temp_df = self.stock_df.copy()
         temp_df['MFI'] = get_mfi()
-        st.pyplot(self.plot_mfi(temp_df, title_txt=f"MFI for {self.selected_stock} stock"))
+        # st.pyplot(self.plot_mfi(temp_df, title_txt=f"MFI for {self.selected_stock} stock"))
+
+        def get_mfi_signal(data, high, low):
+            buy_signal = []
+            sell_signal = []
+
+            for i in range(len(data['MFI'])):
+                if data['MFI'][i] > high:
+                    buy_signal.append(np.nan)
+                    sell_signal.append(data['Close'][i])
+                elif data['MFI'][i] < low:
+                    buy_signal.append(data['Close'][i])
+                    sell_signal.append(np.nan)
+                else:
+                    sell_signal.append(np.nan)
+                    buy_signal.append(np.nan)
+
+            return (buy_signal, sell_signal)
+        
+        temp_df["Buy"], temp_df["Sell"] = get_mfi_signal(temp_df, self.mfi_upper_band, self.mfi_lower_band)
+        # st.pyplot(self.mfi_buy_sell_plot(temp_df, title_txt=f"MFI Buy and Sell Signals for {self.selected_stock} stock"))
+
+        st.markdown("""
+            ### Stochastic Oscillator
+
+            The stochastic oscillator is a momentum indicator comparing the closing price of a security to the range of its prices over a certain period of time and is one of the best-known momentum indicators along with RSI and MACD.
+
+            The intuition is that in a market trending upward, prices will close near the high, and in a market trending downward, prices close near the low.
+
+            The stochastic oscillator is plotted within a range of zero and 100. The default parameters are an overbought zone of 80, an oversold zone of 20 and well-used lookbacks period of 14 and 5 which can be used simultaneously. The oscillator has two lines, the %K and %D, where the former measures momentum and the latter measures the moving average of the former. The %D line is more important of the two indicators and tends to produce better trading signals which are created when the %K crosses through the %D.
+            """)
+        
+        st.markdown("""
+            The stochastic oscillator is calculated using the following formula:
+            ```python
+            %K = 100(C – L)/(H – L)
+            ```
+
+            Where:
+
+            C -> the most recent closing price
+
+            L -> the low of the given previous trading sessions
+
+            H -> the highest price traded during the same given period
+
+            %K -> the current market rate for the currency pair
+
+            %D -> 3-period moving average of %K
+        """)
+       
+
+        def get_stochastic_oscillator():
+            temp_df = self.stock_df.copy()
+            temp_df["L"] = temp_df['Low'].rolling(window=self.stochastic_oscillator_period).min()
+            temp_df["H"] = temp_df['High'].rolling(window=self.stochastic_oscillator_period).max()
+            temp_df['%K'] = 100*((temp_df['Close'] - temp_df['L']) / (temp_df['H'] - temp_df['L']) )
+            temp_df['%D'] = temp_df['%K'].rolling(window=3).mean()
+
+            #Create a column in the DataFrame showing "TRUE" if sell entry signal is given and "FALSE" otherwise. 
+            #A sell is initiated when the %K line crosses down through the %D line and the value of the oscillator is above 80 
+            temp_df['Sell Entry'] = ((temp_df['%K'] < temp_df['%D']) & (temp_df['%K'].shift(1) > temp_df['%D'].shift(1))) & (temp_df['%D'] > self.stochastic_oscillator_upper_band) 
+
+            #Create a column in the DataFrame showing "TRUE" if sell exit signal is given and "FALSE" otherwise. 
+            #A sell exit signal is given when the %K line crosses back up through the %D line 
+            temp_df['Sell Exit'] = ((temp_df['%K'] > temp_df['%D']) & (temp_df['%K'].shift(1) < temp_df['%D'].shift(1))) 
+
+            #create a placeholder column to populate with short positions (-1 for short and 0 for flat) using boolean values created above 
+            temp_df['Short'] = np.nan 
+            temp_df.loc[temp_df['Sell Entry'],'Short'] = -1 
+            temp_df.loc[temp_df['Sell Exit'],'Short'] = 0 
+
+            #Set initial position on day 1 to flat 
+            temp_df['Short'][0] = 0 
+
+            #Forward fill the position column to represent the holding of positions through time 
+            temp_df['Short'] = temp_df['Short'].fillna(method='pad') 
+
+            #Create a column in the DataFrame showing "TRUE" if buy entry signal is given and "FALSE" otherwise. 
+            #A buy is initiated when the %K line crosses up through the %D line and the value of the oscillator is below 20 
+            temp_df['Buy Entry'] = ((temp_df['%K'] > temp_df['%D']) & (temp_df['%K'].shift(1) < temp_df['%D'].shift(1))) & (temp_df['%D'] < self.stochastic_oscillator_lower_band) 
+
+            #Create a column in the DataFrame showing "TRUE" if buy exit signal is given and "FALSE" otherwise. 
+            #A buy exit signal is given when the %K line crosses back down through the %D line 
+            temp_df['Buy Exit'] = ((temp_df['%K'] < temp_df['%D']) & (temp_df['%K'].shift(1) > temp_df['%D'].shift(1))) 
+
+            #create a placeholder column to populate with long positions (1 for long and 0 for flat) using boolean values created above 
+            temp_df['Long'] = np.nan  
+            temp_df.loc[temp_df['Buy Entry'],'Long'] = 1  
+            temp_df.loc[temp_df['Buy Exit'],'Long'] = 0  
+
+            #Set initial position on day 1 to flat 
+            temp_df['Long'][0] = 0  
+
+            #Forward fill the position column to represent the holding of positions through time 
+            temp_df['Long'] = temp_df['Long'].fillna(method='pad') 
+
+            #Add Long and Short positions together to get final strategy position (1 for long, -1 for short and 0 for flat) 
+            temp_df['Position'] = temp_df['Long'] + temp_df['Short']
+
+            temp_df['Market Returns'] = temp_df['Close'].pct_change()
+
+            temp_df['Strategy Returns'] = temp_df['Market Returns'] * temp_df['Position'].shift(1)
+            return temp_df
+
+        temp_df = get_stochastic_oscillator()
+        # st.pyplot(self.plot_stochastic_oscillator(temp_df, title_txt=f"Stochastic Oscillator for {self.selected_stock} stock"))
+
+        st.markdown("""
+            ## Volatility trading strategies
+
+            Volatility trading involves predicting the stability of an asset’s value. Instead of trading on the price rising or falling, traders take a position on whether it will move in any direction. Volatility trading is a good option for investors who believe that the price of an asset will stay within a certain range.
+
+            ### Bollinger Bands
+                    
+            A Bollinger Band is a volatility indicator based on based on the correlation between the normal distribution and stock price and can be used to draw support and resistance curves. It is defined by a set of lines plotted two standard deviations (positively and negatively) away from a simple moving average (SMA) of the security's price, but can be adjusted to user preferences.
+
+            By default it calculates a 20-period SMA (the middle band), an upper band two standard deviations above the the moving average and a lower band two standard deviations below it.
+
+            If the price moves above the upper band this could indicate a good time to sell, and if it moves below the lower band it could be a good time to buy. 
+
+            Whereas the RSI can only be used as a confirming factor inside a ranging market, not a trending market, by using Bollinger bands we can calculate the widening variable, or moving spread between the upper and the lower bands, that tells us if prices are about to trend and whether the RSI signals might not be that reliable.
+
+            Despite 90% of the price action happening between the bands, however, a breakout is not necessarily a trading signal as it provides no clue as to the direction and extent of future price movement.
+        """)
+
+
+        def get_bollinger_bands():
+            temp_df = self.stock_df.copy()
+            temp_df['SMA'] = temp_df['Close'].rolling(window=self.bollinger_band_period).mean()
+            temp_df['STD'] = temp_df['Close'].rolling(window=self.bollinger_band_period).std()
+            temp_df['Upper'] = temp_df['SMA'] + (temp_df['STD'] * 2)
+            temp_df['Lower'] = temp_df['SMA'] - (temp_df['STD'] * 2)
+            column_list = ['Close', 'SMA', 'Upper', 'Lower']
+
+            return temp_df, column_list
+        
+
+        temp_df, column_list = get_bollinger_bands()
+        # st.pyplot(self.plot_bollinger_bands(temp_df, column_list, title_txt=f"Bollinger Bands for {self.selected_stock} stock"))
+        # st.pyplot(self.plot_bollinger_bands_shaded(temp_df, title_txt=f"Shaded Bollinger Bands region for {self.selected_stock} stock"))
+        
+        def get_signal_bb(data):
+            buy_signal = [] #buy list
+            sell_signal = [] #sell list
+
+            for i in range(len(data['Close'])):
+                if data['Close'][i] > data['Upper'][i]: #Then you should sell 
+                    buy_signal.append(np.nan)
+                    sell_signal.append(data['Close'][i])
+                elif data['Close'][i] < data['Lower'][i]: #Then you should buy
+                    sell_signal.append(np.nan)
+                    buy_signal.append(data['Close'][i])
+                else:
+                    buy_signal.append(np.nan)
+                    sell_signal.append(np.nan)
+            return (buy_signal, sell_signal)
+        
+        temp_df['Buy'], temp_df['Sell'] = get_signal_bb(temp_df)
+        # st.pyplot(self.plot_bollinger_bands_shaded_with_signals(temp_df, title_txt=f"Bollinger Bands with Buy and Sell Signals for {self.selected_stock} stock"))
+        
+
+        st.markdown("""
+            ## Volume Trading Strategies
+
+            Volume trading is a measure of how much of a given financial asset has traded in a period of time. Volume traders look for instances of increased buying or selling orders. They also pay attention to current price trends and potential price movements. Generally, increased trading volume will lean heavily towards buy orders.        
+            
+            ### On Balance Volume (OBV)
+
+            OBV is a momentum-based indicator which measures volume flow to gauge the direction of the trend. Volume and price rise are directly proportional and OBV can be used as a confirmation tool with regards to price trends. A rising price is depicted by a rising OBV and a falling OBV stands for a falling price. 
+
+            It is a  cumulative total of the up and down volume. When the close is higher than the previous close, the volume is added to the running
+            total, and when the close is lower than the previous close, the volume is subtracted
+            from the running total. 
+        """)
+
+        def get_obv():
+            OBV = []
+            OBV.append(0)
+
+            for i in range(1, len(temp_df['Adj Close'])):
+                if temp_df['Adj Close'][i] > temp_df['Adj Close'][i-1]:
+                    OBV.append(OBV[-1] + temp_df.Volume[i])
+                elif temp_df['Adj Close'][i] < temp_df['Adj Close'][i-1]:
+                    OBV.append(OBV[-1] - temp_df.Volume[i])
+                else:
+                    OBV.append(OBV[-1])
+            return OBV
+        
+        temp_df = self.stock_df.copy()
+        temp_df['OBV'] = get_obv()
+        temp_df['OBV_EMA'] = temp_df['OBV'].ewm(span=self.on_balance_volumne_period).mean()
+
+        st.pyplot(self.plot_obv_ema(temp_df, title_txt=f"On Balance Volume for {self.selected_stock} stock"))
+
+
+        # Temporary dataframe dump 
+        # st.dataframe(temp_df)
 
 
 

@@ -33,6 +33,7 @@ class Stonks:
         self.stochastic_oscillator_period = 14
         self.stochastic_oscillator_upper_band = 80
         self.stochastic_oscillator_lower_band = 20
+        self.roc_period = 9
         self.bollinger_band_period = 20
         self.on_balance_volumne_period = 20
 
@@ -385,9 +386,9 @@ class Stonks:
     def plot_stochastic_oscillator(self, data, title_txt: str):
         fig, ax = plt.subplots(figsize=(20, 10))
         data[['Strategy Returns','Market Returns']].cumsum().plot(ax=ax)
-        ax.set_title('Strategy returns versus AZN.L returns', color = 'black', fontsize = 20)
+        ax.set_title(title_txt, color = 'black', fontsize = 20)
         return fig
-
+    
     def plot_bollinger_bands(self, data, column_list, title_txt: str):
         fig, ax = plt.subplots(figsize=(20, 10))
         data[column_list].plot(ax=ax)
@@ -477,6 +478,8 @@ class Stonks:
         self.stochastic_oscillator_period = st.sidebar.number_input('Stochastic Oscillator Period', 14, 100, 14)
         self.stochastic_oscillator_upper_band = st.sidebar.number_input('Stochastic Oscillator Upper Band', 50, 100, 80)
         self.stochastic_oscillator_lower_band = st.sidebar.number_input('Stochastic Oscillator Lower Band', 0, 50, 20)
+        st.sidebar.markdown("""---""")
+        self.roc_period = st.sidebar.number_input('ROC Period', 9, 100, 9)
         st.sidebar.markdown("""---""")
         self.bollinger_band_period = st.sidebar.number_input('Bollinger Band Period', 20, 100, 20)
         st.sidebar.markdown("""---""")
@@ -786,6 +789,22 @@ class Stonks:
 
         temp_df = get_stochastic_oscillator()
         st.pyplot(self.plot_stochastic_oscillator(temp_df, title_txt=f"Stochastic Oscillator for {self.selected_stock} stock"))
+
+        st.markdown("""
+            ###  Rate of Change (ROC) 
+
+            The ROC indicator is a pure momentum oscillator. The ROC calculation compares the current price with the price "n" periods ago e.g. when we compute the ROC of the daily price with a 9-day lag, we are simply looking at how much, in percentage, the price has gone up (or down) compared to 9 days ago. Like other momentum indicators, ROC has overbought and oversold zones that may be adjusted according to market conditions. 
+        """)
+        
+        def get_roc():
+            temp_df =  self.stock_df.copy()
+            temp_df['ROC'] = ((temp_df['Adj Close'] - temp_df['Adj Close'].shift(self.roc_period)) / temp_df['Adj Close'].shift(self.roc_period) -1 ) * 100
+
+            return temp_df
+        
+        temp_df = get_roc()
+        st.set_option('deprecation.showPyplotGlobalUse', False)
+        st.pyplot(mpf.plot(temp_df, type='candle',  style='yahoo', figsize=(15,8),  title=f"{self.selected_stock} Daily Price", volume=True))
 
         st.markdown("""
             ## Volatility trading strategies

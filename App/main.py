@@ -926,7 +926,5 @@ class Stonks:
             It is almost certainly better to choose technical indicators that complement each other, not just those that move in unison and generate the same signals. The intuition here is that the more indicators you have that confirm each other, the better your chances are to profit. This can be done by combining strategies to form a system, and looking for multiple signals.                    
         """)
 
-
-if __name__ == '__main__':
-    stonks = Stonks(stocks_filepath="Models/stocknames.csv")
-    stonks.ui_renderer()
+stonks = Stonks(stocks_filepath="Models/stocknames.csv")
+stonks.ui_renderer()

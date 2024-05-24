@@ -1,13 +1,11 @@
-from typing import List, Optional
+from typing import List
 import yfinance as yf
 from datetime import date, timedelta
 import streamlit as st
 import pandas as pd
 import numpy as np
 from Models.datamodels import StockNameModel
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.style as style
 from matplotlib.dates import date2num, DateFormatter, WeekdayLocator,\
     DayLocator, MONDAY
 import seaborn as sns

@@ -16,8 +16,8 @@ class Predictions:
         self.data = data.copy()
         self.target_colm = target_colm
 
-        self.initial_window_size = len(self.data)/10
-        self.step_size = horizon_length
+        self.default_window_size = len(self.data)/10
+        self.default_step_size = horizon_length
 
         """
             Initialize timesfm model with the following parameters:
@@ -55,9 +55,24 @@ class Predictions:
         return window_data, step_size
 
 
-    def predict(self):
+    def predict(self, intial_window_size: int = None, step_size: int = None, freq: str = "D"):
+        
+        initial_window_size = initial_window_size or self.default_window_size
+        step_size = step_size or self.default_step_size
+        
         # Run iterations and return a pd series of predictions
-        pass
+        self.data["unique_id"] = 0
+        window = intial_window_size
+        predictions = pd.Series()
+        
+        while window < len(self.data):
+            current_window, step_size = self._iter_split(window, step_size)
+            batch_pred = self.tfm.forecast_on_df(current_window, freq=freq, value_name=self.target_colm)['timesfm']
+            predictions = pd.concat([predictions, batch_pred])
+            window += step_size
+            
+        
+        
 
 
 

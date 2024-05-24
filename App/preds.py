@@ -24,6 +24,20 @@ class Predictions:
 
         self.tfm.load_from_checkpoint(repo_id=checkpoint)
 
+    
+    def data_preprocess(self):
+        # Cleanup the data according to the time series variable column
+        pass
+
+    
+    def _iter_split(self):
+        # Iteratively split the data by step size 
+        pass
+
+
+    def predict(self):
+        # Run iterations and return a pd series of predictions
+        pass
 
 
 

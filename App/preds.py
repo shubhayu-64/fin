@@ -42,14 +42,17 @@ class Predictions:
         self.tfm.load_from_checkpoint(repo_id=checkpoint)
 
     
-    def data_preprocess(self):
-        # Cleanup the data according to the time series variable column
-        pass
+    def data_preprocess(self, date_colm: str) -> None:
+        self.data = self.data.astype({date_colm: 'datetime64[ns]', self.target_colm: float})
 
     
-    def _iter_split(self):
-        # Iteratively split the data by step size 
-        pass
+    def _iter_split(self, current_window: int, step_size: int):
+        window_data = self.data[:current_window]
+        
+        if current_window + step_size > len(self.data):
+            step_size = len(self.data) - current_window
+        
+        return window_data, step_size
 
 
     def predict(self):

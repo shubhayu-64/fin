@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import timesfm
+import logging
 
 
 class Predictions:
@@ -12,6 +13,8 @@ class Predictions:
                  backend: str = "cpu", 
                  checkpoint: str = "google/timesfm-1.0-200m",
                  ) -> None:
+        
+        logging.info("Initializing Predictions class")
         
         self.data = data.copy()
         self.target_colm = target_colm
@@ -38,8 +41,11 @@ class Predictions:
             model_dims=1280,                        
             backend=backend,                        
         )
-
+        
+        logging.info("Loading model from checkpoint")
         self.tfm.load_from_checkpoint(repo_id=checkpoint)
+        
+        logging.info("Model loaded successfully")
 
     
     def data_preprocess(self, date_colm: str) -> None:
@@ -57,8 +63,14 @@ class Predictions:
 
     def predict(self, intial_window_size: int = None, step_size: int = None, freq: str = "D"):
         
+        logging.info("Starting predictions")
+        
         initial_window_size = initial_window_size or self.default_window_size
         step_size = step_size or self.default_step_size
+        
+        logging.info(f"Initial window size: {initial_window_size}")
+        logging.info(f"Step size: {step_size}")
+        
         
         # Run iterations and return a pd series of predictions
         self.data["unique_id"] = 0
@@ -66,10 +78,16 @@ class Predictions:
         predictions = pd.Series()
         
         while window < len(self.data):
+            logging.info(f"Predicting for window size: {window}")
             current_window, step_size = self._iter_split(window, step_size)
             batch_pred = self.tfm.forecast_on_df(current_window, freq=freq, value_name=self.target_colm)['timesfm']
             predictions = pd.concat([predictions, batch_pred])
             window += step_size
+        
+        logging.debug(f"Buffer: {len(predictions) - (window - initial_window_size)}")
+        predictions = predictions[:-(len(predictions) - (window - initial_window_size))]
+        predictions.index = range(initial_window_size, window)
+        return predictions
             
         
         

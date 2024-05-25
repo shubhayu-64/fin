@@ -503,6 +503,12 @@ class Stonks:
             st.error("Error: No data found for selected stock.")
             st.stop()
 
+        # Download Stock data after fetched
+        st.sidebar.markdown("""---""")
+        # st.sidebar.button("Download Data", self.stock_df.to_csv(f"{self.selected_stock}_data.csv", index=False, header=True, encoding='utf-8-sig'))
+        st.sidebar.download_button(label="Download Data", data=self.stock_df.to_csv(index=False, header=True, encoding='utf-8-sig'), file_name=f"{self.selected_stock}_data.csv", mime='text/csv')
+
+
         st.dataframe(self.stock_df)
 
         st.header("Visualising stock data")

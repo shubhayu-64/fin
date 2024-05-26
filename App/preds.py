@@ -62,10 +62,13 @@ class Predictions:
         return window_data, step_size
 
 
+    def predict(self, intial_window_size: int = None, step: int = None, freq: str = "D"):        
+        window_size = intial_window_size or self.default_window_size
+        step_size = step or self.default_step_size
         
         # Run iterations and return a pd series of predictions
         self.data["unique_id"] = 0
-        window = intial_window_size
+        window = window_size
         predictions = pd.Series()
         
         while window < len(self.data):
@@ -74,14 +77,12 @@ class Predictions:
             batch_pred = self.tfm.forecast_on_df(current_window, freq=freq, value_name=self.target_colm)['timesfm']
             predictions = pd.concat([predictions, batch_pred])
             window += step_size
-        
-        logging.debug(f"Buffer: {len(predictions) - (window - initial_window_size)}")
-        predictions = predictions[:-(len(predictions) - (window - initial_window_size))]
-        predictions.index = range(initial_window_size, window)
+        supp = len(predictions) - (window - window_size)
+        predictions = predictions[:-supp]
+        predictions.index = [i for i in range(window_size, window)]
         return predictions
             
         
         
-
 
 

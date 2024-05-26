@@ -458,6 +458,7 @@ class Stonks:
         
 
     def ui_renderer(self):
+        st.set_page_config(page_title="Stonks", page_icon="📈")
         st.title('Stonks 📈')
         st.image('https://i.ytimg.com/vi/if-2M3K1tqk/maxresdefault.jpg')
 

@@ -12,10 +12,18 @@ import seaborn as sns
 import mplfinance as mpf
 from mplfinance.original_flavor import candlestick_ohlc
 
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', filename='stonks.log')
+
+from preds import Predictions
+
+
 
 
 class Stonks:
     def __init__(self, stocks_filepath: str) -> None:
+        
+        logging.info("Stonks class initialized")
         # Classwise global variables
         self.stocks = None
         self.selected_stock = None
@@ -46,6 +54,8 @@ class Stonks:
 
     def get_stock_data(self):
         self.stock_df = yf.download(self.selected_ticker, self.start_date, self.end_date)
+        self.stock_df.reset_index(inplace=True)
+        self.stock_df.rename(columns={'index': 'Date'}, inplace=True)
 
     def pandas_candlestick_ohlc(self, dat, txt, stick = "day", otherseries = None) :
         """
@@ -521,6 +531,35 @@ class Stonks:
 
         txt = f"{self.selected_stock} OHLC stock prices from {self.start_date} - {self.end_date}"
         st.pyplot(self.pandas_candlestick_ohlc(self.stock_df, stick=self.stick, txt = txt))
+        
+        # ---------------------------------------- Times FM ------------------------------
+        
+        if 'pred' not in st.session_state:
+            st.session_state.pred = Predictions()
+        
+            
+        if "pred" in st.session_state:
+            
+            st.session_state.pred.data_preprocess(
+                data = self.stock_df,
+                target_colm="Adj Close",
+                date_colm="Date",
+            )
+            
+            logging.info("Data Preprocessing Done")
+                        
+            stock_preds = st.session_state.pred.predict()
+            self.stock_df["pred_timesfm"] = stock_preds
+            logging.info("Predictions Done")
+            
+        
+        fig, ax = plt.subplots(figsize=(20, 10))
+        self.stock_df[["Adj Close", "pred_timesfm"]].plot(ax=ax)
+        st.pyplot(fig)
+        
+        
+        
+        # --------------------------------------------------------------------------------
 
         # st.header("Trend-following strategies")
         # st.write("Trend-following is about profiting from the prevailing trend through  buying an asset when its price trend goes up, and selling when its trend goes down, expecting price movements to continue.")

@@ -11,16 +11,22 @@ from matplotlib.dates import date2num, DateFormatter, WeekdayLocator,\
 import seaborn as sns
 import mplfinance as mpf
 from mplfinance.original_flavor import candlestick_ohlc
+from lstm import __lstm__
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', filename='stonks.log')
 
-from preds import Predictions
+from keras.models import Sequential
+from keras.layers import Dense, LSTM
+
+# from preds import Predictions
 
 
 
 
 class Stonks:
+
+
     def __init__(self, stocks_filepath: str) -> None:
         
         logging.info("Stonks class initialized")
@@ -432,7 +438,16 @@ class Stonks:
         plt.xticks(rotation = 45)
         ax.legend()
         return fig
-    
+
+    def plot_lstm_timefm_prediction(self, data, lstm_prediction):
+        fig, ax = plt.subplots(figsize=(17, 8))
+        plt.style.use('ggplot')
+        ax.plot(data['Adj Close'], label = 'Adjusted Close', alpha = 0.5)
+        # Uncomment the line to get both the graphs
+        # ax.plot(data['pred_timesfm'], label = 'timefm', alpha = 0.5)
+        ax.plot(lstm_prediction, label = "LSTM", alpha = 0.5)
+        return fig
+
     def plot_obv_ema(self, data, title_txt: str):
         fig, ax = plt.subplots(figsize=(17, 8))
         plt.style.use('ggplot')
@@ -455,7 +470,7 @@ class Stonks:
         ax.set_ylabel('Price', fontsize = 15)
         ax.legend(loc = 'upper left')
         return fig
-        
+
 
     def ui_renderer(self):
         st.title('Stonks 📈')
@@ -532,34 +547,39 @@ class Stonks:
         txt = f"{self.selected_stock} OHLC stock prices from {self.start_date} - {self.end_date}"
         st.pyplot(self.pandas_candlestick_ohlc(self.stock_df, stick=self.stick, txt = txt))
         
+        # Uncomment the Times FM part
         # ---------------------------------------- Times FM ------------------------------
         
-        if 'pred' not in st.session_state:
-            st.session_state.pred = Predictions()
+        # if 'pred' not in st.session_state:
+        #     st.session_state.pred = Predictions()
         
             
-        if "pred" in st.session_state:
+        # if "pred" in st.session_state:
             
-            st.session_state.pred.data_preprocess(
-                data = self.stock_df,
-                target_colm="Adj Close",
-                date_colm="Date",
-            )
+        #     st.session_state.pred.data_preprocess(
+        #         data = self.stock_df,
+        #         target_colm="Adj Close",
+        #         date_colm="Date",
+        #     )
             
-            logging.info("Data Preprocessing Done")
+        #     logging.info("Data Preprocessing Done")
                         
-            stock_preds = st.session_state.pred.predict()
-            self.stock_df["pred_timesfm"] = stock_preds
-            logging.info("Predictions Done")
+        #     stock_preds = st.session_state.pred.predict()
+        #     self.stock_df["pred_timesfm"] = stock_preds
+        #     logging.info("Predictions Done")
             
         
-        fig, ax = plt.subplots(figsize=(20, 10))
-        self.stock_df[["Adj Close", "pred_timesfm"]].plot(ax=ax)
-        st.pyplot(fig)
+        # fig, ax = plt.subplots(figsize=(20, 10))
+        # self.stock_df[["Adj Close", "pred_timesfm"]].plot(ax=ax)
+        # st.pyplot(fig)
         
-        
-        
-        # --------------------------------------------------------------------------------
+
+        # -------------------------------- LSTM ------------------------------------------
+        lstmPredictions = __lstm__(self.stock_df)
+
+        # -------------------------------- timefm + LSTM ---------------------------------
+
+        st.pyplot(self.plot_lstm_timefm_prediction(data = self.stock_df, lstm_prediction = lstmPredictions))
 
         # st.header("Trend-following strategies")
         # st.write("Trend-following is about profiting from the prevailing trend through  buying an asset when its price trend goes up, and selling when its trend goes down, expecting price movements to continue.")

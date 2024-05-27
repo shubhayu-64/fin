@@ -1,4 +1,5 @@
 from typing import List
+from preds import Predictions
 import yfinance as yf
 from datetime import date, timedelta
 import streamlit as st
@@ -15,11 +16,6 @@ from lstm import __lstm__
 
 import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', filename='stonks.log')
-
-from keras.models import Sequential
-from keras.layers import Dense, LSTM
-
-# from preds import Predictions
 
 
 
@@ -441,11 +437,20 @@ class Stonks:
 
     def plot_lstm_timefm_prediction(self, data, lstm_prediction):
         fig, ax = plt.subplots(figsize=(17, 8))
-        plt.style.use('ggplot')
-        ax.plot(data['Adj Close'], label = 'Adjusted Close', alpha = 0.5)
-        # Uncomment the line to get both the graphs
-        # ax.plot(data['pred_timesfm'], label = 'timefm', alpha = 0.5)
-        ax.plot(lstm_prediction, label = "LSTM", alpha = 0.5)
+        sns.set_style('whitegrid')
+    
+        ax.plot(data['Adj Close'], label='Actual Close', color='tab:blue', alpha=0.8)
+        ax.plot(data['pred_timesfm'], label='TimeFM Prediction', color='tab:red', alpha=0.8)
+        ax.plot(lstm_prediction, label="LSTM Prediction", color='tab:purple', alpha=0.8)
+        
+        ax.set_title("LSTM and TimeFM Predictions vs Actual Close", fontsize=16)
+        ax.set_xlabel("Date", fontsize=14)
+        ax.set_ylabel("Price", fontsize=14)
+        ax.legend(fontsize=12)
+        ax.grid(True, linestyle='--', alpha=0.5)
+        
+        plt.xticks(rotation=45)
+        plt.tight_layout()
         return fig
 
     def plot_obv_ema(self, data, title_txt: str):
@@ -550,36 +555,51 @@ class Stonks:
         # Uncomment the Times FM part
         # ---------------------------------------- Times FM ------------------------------
         
-        # if 'pred' not in st.session_state:
-        #     st.session_state.pred = Predictions()
+        if 'pred' not in st.session_state:
+            st.session_state.pred = Predictions()
         
             
-        # if "pred" in st.session_state:
+        if "pred" in st.session_state:
             
-        #     st.session_state.pred.data_preprocess(
-        #         data = self.stock_df,
-        #         target_colm="Adj Close",
-        #         date_colm="Date",
-        #     )
+            st.session_state.pred.data_preprocess(
+                data = self.stock_df,
+                target_colm="Adj Close",
+                date_colm="Date",
+            )
             
-        #     logging.info("Data Preprocessing Done")
+            logging.info("Data Preprocessing Done")
                         
-        #     stock_preds = st.session_state.pred.predict()
-        #     self.stock_df["pred_timesfm"] = stock_preds
-        #     logging.info("Predictions Done")
+            stock_preds = st.session_state.pred.predict()
+            self.stock_df["pred_timesfm"] = stock_preds
+            logging.info("Predictions Done")
             
         
-        # fig, ax = plt.subplots(figsize=(20, 10))
-        # self.stock_df[["Adj Close", "pred_timesfm"]].plot(ax=ax)
-        # st.pyplot(fig)
+        fig, ax = plt.subplots(figsize=(20, 10))
+        self.stock_df[["Adj Close", "pred_timesfm"]].plot(ax=ax)
+        ax.set_title(f"{self.selected_stock} Price vs TimesFM Predictions", fontsize=18)
+        ax.set_xlabel("Date", fontsize=14)
+        ax.set_ylabel("Price", fontsize=14)
+        ax.legend(["Actual Price", "Predicted Price"], loc="upper left", fontsize=12)
+        ax.grid(True, linestyle='--', alpha=0.7)
+        st.pyplot(fig)
         
 
         # -------------------------------- LSTM ------------------------------------------
-        lstmPredictions = __lstm__(self.stock_df)
+        lstm_predictions = __lstm__(self.stock_df)
+        
+        fig, ax = plt.subplots(figsize=(20, 10))
+        self.stock_df[["Adj Close"]].plot(ax=ax)
+        ax.plot(lstm_predictions, label = "LSTM", alpha = 0.5)
+        ax.set_title(f"{self.selected_stock} Price vs LSTM Predictions", fontsize=18)
+        ax.set_xlabel("Date", fontsize=14)
+        ax.set_ylabel("Price", fontsize=14)
+        ax.legend(["Actual Price", "Predicted Price"], loc="upper left", fontsize=12)
+        ax.grid(True, linestyle='--', alpha=0.7)
+        st.pyplot(fig)
 
-        # -------------------------------- timefm + LSTM ---------------------------------
+        # -------------------------------- TimesFM + LSTM ---------------------------------
 
-        st.pyplot(self.plot_lstm_timefm_prediction(data = self.stock_df, lstm_prediction = lstmPredictions))
+        st.pyplot(self.plot_lstm_timefm_prediction(data = self.stock_df, lstm_prediction = lstm_predictions))
 
         # st.header("Trend-following strategies")
         # st.write("Trend-following is about profiting from the prevailing trend through  buying an asset when its price trend goes up, and selling when its trend goes down, expecting price movements to continue.")

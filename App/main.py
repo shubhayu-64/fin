@@ -1,3 +1,7 @@
+import logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s',  filename='logger.log')
+
+
 from typing import List
 from preds import Predictions
 import yfinance as yf
@@ -14,9 +18,6 @@ import mplfinance as mpf
 from mplfinance.original_flavor import candlestick_ohlc
 from lstm import __lstm__
 
-import logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', filename='stonks.log')
-
 
 
 
@@ -25,7 +26,8 @@ class Stonks:
 
     def __init__(self, stocks_filepath: str) -> None:
         
-        logging.info("Stonks class initialized")
+        logging.info("Initializing Stonks class")
+        
         # Classwise global variables
         self.stocks = None
         self.selected_stock = None
@@ -56,8 +58,6 @@ class Stonks:
 
     def get_stock_data(self):
         self.stock_df = yf.download(self.selected_ticker, self.start_date, self.end_date)
-        self.stock_df.reset_index(inplace=True)
-        self.stock_df.rename(columns={'index': 'Date'}, inplace=True)
 
     def pandas_candlestick_ohlc(self, dat, txt, stick = "day", otherseries = None) :
         """
@@ -533,10 +533,10 @@ class Stonks:
             st.error("Error: No data found for selected stock.")
             st.stop()
 
-        # Download Stock data after fetched
-        st.sidebar.markdown("""---""")
-        # st.sidebar.button("Download Data", self.stock_df.to_csv(f"{self.selected_stock}_data.csv", index=False, header=True, encoding='utf-8-sig'))
-        st.sidebar.download_button(label="Download Data", data=self.stock_df.to_csv(index=False, header=True, encoding='utf-8-sig'), file_name=f"{self.selected_stock}_data.csv", mime='text/csv')
+        # # Download Stock data after fetched
+        # st.sidebar.markdown("""---""")
+        # # st.sidebar.button("Download Data", self.stock_df.to_csv(f"{self.selected_stock}_data.csv", index=False, header=True, encoding='utf-8-sig'))
+        # st.sidebar.download_button(label="Download Data", data=self.stock_df.to_csv(index=False, header=True, encoding='utf-8-sig'), file_name=f"{self.selected_stock}_data.csv", mime='text/csv')
         
 
 
@@ -580,7 +580,7 @@ class Stonks:
 
             The moving average crossover trading strategy will be to take two moving averages - 20-day (fast) and 200-day (slow) - and to go long (buy) when the fast MA goes above the slow MA and to go short (sell) when the fast MA goes below the slow MA.
         """)
-
+        
         temp_df = self.stock_df.copy()
         temp_df["20d"] = np.round(temp_df["Adj Close"].rolling(window = 20, center = False).mean(), 2)
         temp_df["50d"] = np.round(temp_df["Adj Close"].rolling(window = 50, center = False).mean(), 2)
@@ -838,6 +838,7 @@ class Stonks:
         
         temp_df = get_roc()
         st.set_option('deprecation.showPyplotGlobalUse', False)
+        temp_df.index = pd.to_datetime(temp_df.index)
         st.pyplot(mpf.plot(temp_df, type='candle',  style='yahoo', figsize=(15,8),  title=f"{self.selected_stock} Daily Price", volume=True))
 
         st.markdown("""
@@ -956,6 +957,10 @@ class Stonks:
         
         # Predictions start here 
         # ------------------------------------- Times FM ---------------------------------
+        temp_df = self.stock_df.copy()
+        temp_df.reset_index(inplace=True)
+        temp_df.rename(columns={'index': 'Date'}, inplace=True)
+        
         
         if 'pred' not in st.session_state:
             st.session_state.pred = Predictions()
@@ -964,20 +969,18 @@ class Stonks:
         if "pred" in st.session_state:
             
             st.session_state.pred.data_preprocess(
-                data = self.stock_df,
+                data = temp_df,
                 target_colm="Adj Close",
                 date_colm="Date",
             )
             
-            logging.info("Data Preprocessing Done")
                         
             stock_preds = st.session_state.pred.predict()
-            self.stock_df["pred_timesfm"] = stock_preds
-            logging.info("Predictions Done")
+            temp_df["pred_timesfm"] = stock_preds
             
         
         fig, ax = plt.subplots(figsize=(20, 10))
-        self.stock_df[["Adj Close", "pred_timesfm"]].plot(ax=ax)
+        temp_df[["Adj Close", "pred_timesfm"]].plot(ax=ax)
         ax.set_title(f"{self.selected_stock} Price vs TimesFM Predictions", fontsize=18)
         ax.set_xlabel("Date", fontsize=14)
         ax.set_ylabel("Price", fontsize=14)
@@ -987,10 +990,10 @@ class Stonks:
         
 
         # -------------------------------- LSTM ------------------------------------------
-        lstm_predictions = __lstm__(self.stock_df)
+        lstm_predictions = __lstm__(temp_df)
         
         fig, ax = plt.subplots(figsize=(20, 10))
-        self.stock_df[["Adj Close"]].plot(ax=ax)
+        temp_df[["Adj Close"]].plot(ax=ax)
         ax.plot(lstm_predictions, label = "LSTM", alpha = 0.5)
         ax.set_title(f"{self.selected_stock} Price vs LSTM Predictions", fontsize=18)
         ax.set_xlabel("Date", fontsize=14)
@@ -1001,11 +1004,10 @@ class Stonks:
 
         # -------------------------------- TimesFM + LSTM --------------------------------
 
-        st.pyplot(self.plot_lstm_timefm_prediction(data = self.stock_df, lstm_prediction = lstm_predictions))
+        st.pyplot(self.plot_lstm_timefm_prediction(data = temp_df, lstm_prediction = lstm_predictions))
         
         # --------------------------------------------------------------------------------
-        
-        
+
         st.markdown("""---""")
         st.markdown("""
             ## Conclusion
@@ -1013,5 +1015,9 @@ class Stonks:
             It is almost certainly better to choose technical indicators that complement each other, not just those that move in unison and generate the same signals. The intuition here is that the more indicators you have that confirm each other, the better your chances are to profit. This can be done by combining strategies to form a system, and looking for multiple signals.                    
         """)
 
-stonks = Stonks(stocks_filepath="Models/stocknames.csv")
-stonks.ui_renderer()
+
+if __name__ == "__main__":
+
+    logging.info("Starting Stonks App")
+    # stonks = Stonks(stocks_filepath="Models/stocknames.csv")
+    # stonks.ui_renderer()

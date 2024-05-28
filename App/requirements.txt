@@ -1,0 +1,13 @@
+keras
+matplotlib
+mplfinance
+numpy
+pandas
+pydantic
+scikit_learn
+seaborn
+streamlit
+yfinance
+jax[cpu]
+jaxlib
+git+https://github.com/google-research/timesfm.git

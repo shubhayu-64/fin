@@ -956,6 +956,16 @@ class Stonks:
         st.markdown("""---""")
         
         # Predictions start here 
+        st.header("Predictions")
+        st.markdown("""
+                We used TimesFM (200M parameters) and LSTM (66K parameters) for stock price prediction, achieving strong alignment with actual data. TimesFM's zero-shot performance on diverse datasets approached state-of-the-art supervised models. Discrepancies noted are expected to reduce with increased parameter size and further training.
+        """)
+        
+        st.subheader("TimesFM (Time Series Foundation Model)")
+        st.markdown("""
+                TimesFM (200M parameters) uses long output patches to reduce error accumulation, enabling accurate long-horizon forecasts. Trained on sequences with varying prediction horizons, it excels in zero-shot predictions across diverse datasets, effectively predicting stock price movements.
+
+                """)
         # ------------------------------------- Times FM ---------------------------------
         temp_df = self.stock_df.copy()
         temp_df.reset_index(inplace=True)
@@ -990,6 +1000,12 @@ class Stonks:
         
 
         # -------------------------------- LSTM ------------------------------------------
+        st.subheader("LSTM (Long Short Term Memory)")
+        st.markdown("""
+                LSTM, equipped with 66,000 parameters, effectively captures long-term dependencies in stock market data. Its recurrent architecture enables accurate prediction of stock price movements, making it a valuable tool for financial forecasting.
+                """)
+        
+        
         lstm_predictions = __lstm__(temp_df)
         
         fig, ax = plt.subplots(figsize=(20, 10))
@@ -1003,6 +1019,11 @@ class Stonks:
         st.pyplot(fig)
 
         # -------------------------------- TimesFM + LSTM --------------------------------
+        
+        st.subheader("Comparison: TimesFM vs. LSTM for Stock Price Prediction")
+        st.markdown("""
+                While TimesFM utilizes transformer-based architecture with 200M parameters and focuses on capturing complex temporal dependencies for accurate long-horizon forecasts, LSTM, with 66,000 parameters, leverages its recurrent structure to capture long-term dependencies in stock market data, offering effective prediction of price movements.
+            """)
 
         st.pyplot(self.plot_lstm_timefm_prediction(data = temp_df, lstm_prediction = lstm_predictions))
         
@@ -1012,12 +1033,9 @@ class Stonks:
         st.markdown("""
             ## Conclusion
 
-            It is almost certainly better to choose technical indicators that complement each other, not just those that move in unison and generate the same signals. The intuition here is that the more indicators you have that confirm each other, the better your chances are to profit. This can be done by combining strategies to form a system, and looking for multiple signals.                    
-        """)
+            In conclusion, the success of stock market analysis relies on combining complementary technical indicators rather than solely relying on uniform signals. This diversification increases the chance of profitable outcomes by forming a robust system. Our comparison between TimesFM and LSTM emphasizes the importance of selecting models based on specific analytical needs. While TimesFM captures complex temporal dependencies effectively, LSTM excels in capturing long-term patterns. By integrating these insights, investors can make more informed decisions and navigate financial markets with greater confidence.        """)
 
 
 if __name__ == "__main__":
-
-    logging.info("Starting Stonks App")
-    # stonks = Stonks(stocks_filepath="Models/stocknames.csv")
-    # stonks.ui_renderer()
+    stonks = Stonks(stocks_filepath="Models/stocknames.csv")
+    stonks.ui_renderer()
